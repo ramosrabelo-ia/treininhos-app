@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+    <defs>
+      <radialGradient id="page" cx="50%" cy="42%"><stop stop-color="#2b1a11"/><stop offset=".5" stop-color="#101011"/><stop offset="1" stop-color="#060607"/></radialGradient>
+      <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a8f96"/><stop offset=".24" stop-color="#353940"/><stop offset=".7" stop-color="#111318"/><stop offset="1" stop-color="#666b73"/></linearGradient>
+      <clipPath id="round"><circle cx="450" cy="474" r="258"/></clipPath>
+    </defs>
+    <rect width="900" height="900" fill="url(#page)"/>
+    <text x="58" y="55" fill="#ff8a3d" text-anchor="start" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" font-weight="900" letter-spacing="2">MOCKUP 5/5</text>
+    <text x="450" y="101" fill="#f7f3ef" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="31" font-weight="900" letter-spacing="0">RESUMO FINAL</text>
+    <text x="450" y="132" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" font-weight="600" letter-spacing="0">Tempo no fim e sincronização manual com Samsung Health</text>
+    <rect x="342" y="151" width="216" height="82" rx="41" fill="#282b31"/>
+    <rect x="342" y="704" width="216" height="152" rx="52" fill="#24272d"/>
+    <rect x="168" y="190" width="564" height="564" rx="204" fill="url(#metal)" stroke="#7e838b" stroke-width="4"/>
+    <rect x="720" y="360" width="25" height="92" rx="12" fill="#6b7078"/>
+    <rect x="721" y="504" width="18" height="62" rx="9" fill="#50545b"/>
+    <g clip-path="url(#round)">
+      <circle cx="450" cy="474" r="258" fill="#070707"/>
+      <g transform="translate(192 216) scale(1.72)"><text x="150" y="49" fill="#f7f3ef" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" font-weight="900" letter-spacing="0">TREINO FINALIZADO</text><circle cx="150" cy="98" r="30" fill="#5a301c" stroke="#ff8a3d" stroke-width="4"/><text x="150" y="109" fill="#ff8a3d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="30" font-weight="900" letter-spacing="0">✓</text><text x="150" y="142" fill="#f7f3ef" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="10" font-weight="900" letter-spacing="0.55">RESUMO DO TREINO</text><rect x="36" y="153" width="110" height="55" rx="16" fill="#1a1a1c" stroke="#4a423e" stroke-width="1"/><rect x="154" y="153" width="110" height="55" rx="16" fill="#1a1a1c" stroke="#4a423e" stroke-width="1"/><text x="91" y="171" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.5" font-weight="900" letter-spacing="0.5">TEMPO</text><text x="91" y="197" fill="#f7f3ef" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" font-weight="900" letter-spacing="0">00:48</text><text x="209" y="171" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.5" font-weight="900" letter-spacing="0.5">EXERCÍCIOS</text><text x="209" y="197" fill="#ff8a3d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" font-weight="900" letter-spacing="0">7 / 11</text><text x="150" y="221" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.5" font-weight="700" letter-spacing="0">4 exercícios ficaram pendentes</text><rect x="52" y="232" width="196" height="35" rx="17" fill="#ff8a3d" stroke="none" stroke-width="0"/><text x="150" y="254" fill="#070707" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.2" font-weight="900" letter-spacing="0.35">SINCRONIZAR SAMSUNG HEALTH</text><text x="150" y="280" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.5" font-weight="700" letter-spacing="0">Início automático em 10 s</text></g>
+    </g>
+    <circle cx="450" cy="474" r="258" fill="none" stroke="#030303" stroke-width="13"/>
+    <text x="450" y="884" fill="#aaa29d" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">TREINO DA LUANA · GALAXY WATCH8</text>
+  </svg>

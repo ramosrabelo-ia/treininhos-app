@@ -2,35 +2,21 @@
 
 Aplicativo pessoal de musculação com uma versão Android para o celular Xiaomi e uma versão Wear OS para o Samsung Galaxy Watch8.
 
-A V15 foi desenhada para o uso real na academia: consultar o treino, trocar de dupla quando um aparelho estiver ocupado, registrar cada série no relógio e continuar depois sem perder o progresso.
+A V16 foi desenhada para o uso real na academia: consultar o treino, trocar de dupla quando um aparelho estiver ocupado, registrar cada série no relógio e continuar depois sem perder o progresso.
 
-## Interface V15 no Galaxy Watch8
+## Interface V16
 
-<p align="center">
-  <img src="docs/images/v15/01-lista-duplas.png" width="19%" alt="Lista rolável de duplas no Galaxy Watch8">
-  <img src="docs/images/v15/02-exercicio-foto.png" width="19%" alt="Exercício com fotografia maior no Galaxy Watch8">
-  <img src="docs/images/v15/03-exercicio-series.png" width="19%" alt="Marcação de séries no Galaxy Watch8">
-  <img src="docs/images/v15/04-lista-rolada.png" width="19%" alt="Progresso parcial na lista de duplas">
-  <img src="docs/images/v15/05-resumo-final.png" width="19%" alt="Resumo final do treino no Galaxy Watch8">
-</p>
+A V16 altera somente a interface do Galaxy Watch8. As fotografias originais, os quatro treinos, exercícios, séries, repetições, cargas, progresso e sincronização foram copiados da V15 sem mudanças.
 
-Os mockups em PNG e SVG estão em [`treino-da-luana/v15/docs/mockups`](treino-da-luana/v15/docs/mockups).
+Na tela de exercício, a fotografia ocupa a maior área útil. O nome e os checks das séries aparecem logo abaixo. Os comandos `‹` e `›` são circulares, permanecem fixos no arco inferior e não dependem da rolagem do conteúdo.
 
-## Interface V15 no celular Xiaomi
-
-<p align="center">
-  <img src="treino-da-luana/v15/docs/mockups/phone-v15-home.svg" width="360" alt="Tela inicial do Treino da Luana V15 no celular Xiaomi">
-</p>
-
-A versão para celular mantém o visual Premium Obsidian, os quatro treinos A, B, C e D, o progresso semanal, o cadastro de cargas e o painel de conexão com o Galaxy Watch8.
-
-## O que mudou na V15
+## O que mudou na V16
 
 ### Navegação orgânica
 
 O botão **Duplas** permanece no topo. A lista é rolável e mostra cada dupla em um cartão maior, com fotografia, nome do movimento e número de séries concluídas. É possível abrir qualquer dupla em qualquer ordem.
 
-Os botões **Anterior** e **Próximo** percorrem todos os exercícios do treino. Eles ficam empilhados e inteiramente dentro da área segura da tela redonda. O botão físico inferior do Watch8 também volta para a tela anterior.
+Os botões circulares `‹` e `›` percorrem todos os exercícios do treino e permanecem inteiramente dentro da área segura da tela redonda. O botão físico inferior do Watch8 também volta para a tela anterior.
 
 ### Registro de séries
 
@@ -53,18 +39,16 @@ O treino pode ser finalizado mesmo com exercícios pendentes. A tela final apres
 * botão para solicitar a sincronização com o Samsung Health
 * retorno automático à tela inicial após 10 segundos
 
-Não existe cronômetro de descanso automático na V15.
+Não existe cronômetro de descanso automático na V16.
 
 ## Aplicativos para teste
 
 | Arquivo | Finalidade |
 | --- | --- |
-| [Pacote completo V15](releases/v15/Treino-da-Luana-v15-TESTE-COMPLETO.zip) | Xiaomi e instalador Windows do Watch8 |
-| [APK Xiaomi](releases/v15/Treino-da-Luana-v15-Xiaomi-TESTE.apk) | Atualização do aplicativo do celular |
-| [Instalador Windows Watch8](releases/v15/Treino-da-Luana-Watch8-Instalador-Windows-v15-TESTE.zip) | APK, BAT, PowerShell e instruções de instalação |
-| [APK Watch8](releases/v15/Treino-da-Luana-v15-Galaxy-Watch8-TESTE.apk) | APK avulso para instalação por ADB |
+| Pacote V16 | Será publicado depois da assinatura com a mesma chave privada usada na V15 |
+| [Último pacote instalável: V15](releases/v15/Treino-da-Luana-v15-TESTE-COMPLETO.zip) | Xiaomi e instalador Windows do Watch8 |
 
-Os APKs usam `versionCode 16`, o pacote `com.luanarabelo.treinodaluana.v12.xiaomitest` e a mesma assinatura de teste da V14.1. Por isso podem ser instalados como atualização sem remover o aplicativo anterior.
+O código da V16 usa `versionCode 17` e preserva o pacote `com.luanarabelo.treinodaluana.v12.xiaomitest`. Para funcionar como atualização sem remover o aplicativo anterior, o APK final precisa ser assinado com a mesma chave privada usada na V15.
 
 > A chave privada de assinatura não faz parte do repositório. Os APKs publicados são builds de teste, não uma distribuição de loja.
 
@@ -79,10 +63,14 @@ Os APKs usam `versionCode 16`, o pacote `com.luanarabelo.treinodaluana.v12.xiaom
 ### Galaxy Watch8 no Windows
 
 1. Baixe e extraia completamente o ZIP do instalador.
-2. Ative temporariamente a depuração ADB e a depuração sem fio no relógio.
-3. Abra `INSTALAR-NO-WATCH8.bat`.
-4. Siga as solicitações de IP, porta principal, porta de emparelhamento e código.
-5. Depois da instalação, desative novamente as opções de depuração.
+2. Se **Opções do desenvolvedor** não aparecer, abra **Configurações > Sobre o relógio > Informações do software** ou **Versões** e toque sete vezes em **Número da versão / Build number**.
+3. Abra **Configurações > Opções do desenvolvedor** e ative **Depuração ADB** e **Depuração sem fio**.
+4. Na tela de **Depuração sem fio**, anote o IP e a porta de conexão.
+5. Entre em **Emparelhar novo dispositivo** e anote o código, o IP e a porta de emparelhamento.
+6. Abra `INSTALAR-NO-WATCH8.bat` e informe os dados quando solicitado.
+7. Depois da instalação, desative novamente as opções de depuração.
+
+O relógio e o computador precisam estar na mesma rede Wi-Fi. A porta de conexão e a porta de emparelhamento são diferentes.
 
 O script valida o SHA-256 do APK antes de instalar e usa `adb install -r`, preservando os dados da versão anterior quando a assinatura é compatível.
 
@@ -116,14 +104,14 @@ O botão apresentado no relógio envia a solicitação ao celular. O registro no
 ## Arquitetura
 
 ```text
-treino-da-luana/v15/
+treino-da-luana/v16/
 ├── app/                 aplicativo Android do Xiaomi
 ├── wear/                aplicativo Wear OS do Galaxy Watch8
 ├── installer-watch8/    BAT, PowerShell e instruções
 ├── docs/mockups/         cinco interfaces aprovadas em PNG e SVG
 └── docs/tools/           gerador dos mockups
 
-releases/v15/             APKs e pacotes prontos para teste
+releases/v16/             criado somente após assinatura e empacotamento
 ```
 
 Os dois módulos compartilham o mesmo domínio de treino em `WorkoutData`. O celular usa `PhoneProgressSync` e o relógio usa `WatchProgressSync` para trocar cargas, séries, conclusão e resumo pelo Wear OS Data Layer.
@@ -138,7 +126,7 @@ Requisitos:
 * Gradle 8.11.1
 
 ```bash
-cd treino-da-luana/v15
+cd treino-da-luana/v16
 gradle :app:assembleDebug :wear:assembleDebug --no-daemon
 ```
 
@@ -149,11 +137,11 @@ app/build/outputs/apk/debug/app-debug.apk
 wear/build/outputs/apk/debug/wear-debug.apk
 ```
 
-O fluxo [build-treino-da-luana-v15.yml](.github/workflows/build-treino-da-luana-v15.yml) executa a mesma validação no GitHub Actions.
+O fluxo [build-treino-da-luana-v16.yml](.github/workflows/build-treino-da-luana-v16.yml) executa a mesma validação no GitHub Actions.
 
 ## Integridade dos pacotes publicados
 
-Os hashes estão em [`releases/v15/SHA256SUMS.txt`](releases/v15/SHA256SUMS.txt).
+O arquivo `releases/v16/SHA256SUMS.txt` será criado junto com os APKs assinados. O instalador da V16 permanece bloqueado até receber o hash do APK final.
 
 ## Histórico
 
@@ -165,7 +153,8 @@ Os hashes estão em [`releases/v15/SHA256SUMS.txt`](releases/v15/SHA256SUMS.txt)
 | V12 | Quatro treinos conjugados, Health Connect e aplicativo Watch8 |
 | V13 | Sincronização de progresso entre Xiaomi e Watch8 |
 | V14.1 | Interface do relógio, cargas e correção do crash `DataItemBuffer` |
-| V15 | Duplas livres, rolagem real, séries interativas e navegação para tela circular |
+| V15 | Duplas livres, rolagem real e séries interativas |
+| V16 | Foto em destaque e navegação fixa para a tela circular |
 
 ## Limitações conhecidas
 

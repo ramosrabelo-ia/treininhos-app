@@ -1,0 +1,4 @@
+storeFile=test-only-signing.jks
+storePassword=change-me
+keyAlias=your-key-alias
+keyPassword=change-me
