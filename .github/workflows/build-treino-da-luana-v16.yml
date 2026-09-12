@@ -1,4 +1,4 @@
-name: Validar Treino da Luana V16
+name: Gerar Treino da Luana V17
 
 on:
   push:
@@ -47,13 +47,13 @@ jobs:
       - name: Publicar build de validação do Xiaomi
         uses: actions/upload-artifact@v4
         with:
-          name: Treino-da-Luana-v16-Xiaomi-CI
+          name: Treino-da-Luana-v17-Xiaomi
           path: treino-da-luana/v16/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Publicar build de validação do Galaxy Watch8
         uses: actions/upload-artifact@v4
         with:
-          name: Treino-da-Luana-v16-Galaxy-Watch8-CI
+          name: Treino-da-Luana-v17-Galaxy-Watch8
           path: treino-da-luana/v16/wear/build/outputs/apk/debug/wear-debug.apk
           if-no-files-found: error
