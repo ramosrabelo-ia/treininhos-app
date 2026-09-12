@@ -168,7 +168,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
         LinearLayout content = contentColumn(14, 3);
         content.addView(label(WorkoutData.TYPES[workout], 6, ORANGE, true), fullWrapWithMargins(0, 2));
-        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(94, 0, 4));
+        // Mostra o movimento inteiro: a foto é referência, não um recorte decorativo.
+        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(82, 0, 4));
 
         TextView title = label(WorkoutData.NAMES[workout][exercise], 10, WHITE, true);
         title.setMaxLines(2);
@@ -267,7 +268,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         if (bitmap != null) {
             ImageView image = new ImageView(this);
             image.setImageBitmap(bitmap);
-            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
             photo.addView(image, new FrameLayout.LayoutParams(-1, -1));
         }
         row.addView(photo, new LinearLayout.LayoutParams(dp(54), dp(48)));
