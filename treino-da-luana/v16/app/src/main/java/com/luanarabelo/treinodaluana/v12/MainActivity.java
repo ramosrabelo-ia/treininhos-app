@@ -255,8 +255,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
         LinearLayout top = horizontal();
         LinearLayout copy = vertical();
-        copy.addView(micro("SEMANA ATUAL", ORANGE), full());
-        TextView period = body(weekLabel(), 13, MUTED);
+        copy.addView(micro("META ATUAL · 4 SEMANAS", ORANGE), full());
+        TextView period = body("Ciclo mantido até 3 de novembro", 13, MUTED);
         period.setPadding(0, dp(4), 0, 0);
         copy.addView(period, full());
         top.addView(copy, weighted());
@@ -275,8 +275,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         int blocks = completedBlockCount();
         card.addView(body(blocks + " de " + WorkoutData.TOTAL_BLOCKS + " blocos concluídos", 14, WHITE), full());
         TextView helper = body(workouts == 4
-                ? "Semana completa. Todos os check-ins estão feitos."
-                : "Toque em um treino para começar ou continuar de onde parou.", 12, MUTED);
+                ? "Semana completa. O próximo ciclo semanal começa limpo; suas cargas continuam salvas."
+                : "Meta do ciclo: completar A, B, C e D por semana. Toque para começar ou continuar.", 12, MUTED);
         helper.setPadding(0, dp(5), 0, 0);
         card.addView(helper, full());
         return card;
@@ -937,7 +937,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         back.setOnClickListener(view -> showHome());
         root.addView(back, full(dp(42)));
 
-        TextView eyebrow = micro("CHECK-IN SEMANAL", CYAN);
+        TextView eyebrow = micro("CICLO ATUAL · ATÉ 3 NOV", CYAN);
         eyebrow.setPadding(0, dp(8), 0, dp(5));
         root.addView(eyebrow, full());
         root.addView(heading("Seu progresso", 31), full());
@@ -950,7 +950,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         hero.setPadding(dp(18), dp(19), dp(18), dp(19));
         LinearLayout stats = horizontal();
         LinearLayout percentBox = vertical();
-        percentBox.addView(micro("SEMANA ATUAL", ORANGE), full());
+        percentBox.addView(micro("META DA SEMANA", ORANGE), full());
         TextView percentText = heading(percent + "%", 42);
         percentText.setPadding(0, dp(5), 0, 0);
         percentBox.addView(percentText, full());
@@ -978,7 +978,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         heroParams.setMargins(0, dp(18), 0, dp(24));
         root.addView(hero, heroParams);
 
-        TextView week = heading("Treinos da semana", 22);
+        TextView week = heading("Treinos desta semana", 22);
         week.setPadding(0, 0, 0, dp(12));
         root.addView(week, full());
         for (int workout = 0; workout < 4; workout++) {
@@ -986,8 +986,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         }
 
         TextView message = body(workouts == 4
-                ? "Semana fechada. Quatro treinos, quatro check-ins."
-                : "Cada série marcada fica salva no celular. Você pode sair e continuar depois.", 14, MUTED);
+                ? "Semana fechada. Meta do ciclo: repetir A, B, C e D nas próximas semanas até 3 de novembro."
+                : "Cada série marcada fica salva. A carga continua entre as semanas; os checks pertencem apenas à semana atual.", 14, MUTED);
         message.setGravity(Gravity.CENTER);
         message.setPadding(dp(18), dp(12), dp(18), dp(18));
         root.addView(message, full());
