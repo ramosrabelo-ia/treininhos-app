@@ -27,8 +27,8 @@ android {
         applicationId 'com.luanarabelo.treinodaluana.v12'
         minSdk 30
         targetSdk 35
-        versionCode 17
-        versionName '16.0-watch8-test'
+        versionCode 18
+        versionName '17.0-watch8-ciclo-4-semanas'
     }
 
     buildTypes {
