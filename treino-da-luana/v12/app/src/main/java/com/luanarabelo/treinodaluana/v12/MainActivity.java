@@ -1,6 +1,7 @@
 package com.luanarabelo.treinodaluana.v12;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -12,9 +13,11 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -25,6 +28,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
@@ -99,7 +103,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (currentScreen != 0) {
+        if (currentScreen == 1) {
+            navigateBackFromBlock();
+        } else if (currentScreen != 0) {
             showHome();
         } else {
             super.onBackPressed();
@@ -136,8 +142,6 @@ public class MainActivity extends Activity {
         root.addView(createOfficialHero(), full(dp(230)));
         root.addView(space(14));
         root.addView(createWeeklySummary(), full());
-        root.addView(space(12));
-        root.addView(createSyncHomeCard(), full());
         root.addView(space(24));
 
         root.addView(micro("PLANO CONJUGADO", ORANGE), full());
@@ -161,6 +165,9 @@ public class MainActivity extends Activity {
         note.setGravity(Gravity.CENTER);
         note.setPadding(dp(14), dp(18), dp(14), 0);
         root.addView(note, full());
+
+        root.addView(space(24));
+        root.addView(createSyncHomeCard(), full());
 
         setContentView(scroll);
     }
@@ -342,13 +349,19 @@ public class MainActivity extends Activity {
         scroll.setBackgroundColor(BLACK);
         scroll.setFillViewport(true);
         LinearLayout root = vertical();
-        root.setPadding(dp(16), dp(15), dp(16), dp(34));
+        applySafeTopPadding(scroll, root, 16, 20, 16, 34);
         scroll.addView(root, full());
 
         LinearLayout toolbar = horizontal();
-        TextView back = micro("‹  VOLTAR", ORANGE);
+        TextView back = micro(block > 0 ? "‹  BLOCO ANTERIOR" : "‹  TREINOS", ORANGE);
         back.setGravity(Gravity.CENTER_VERTICAL);
-        back.setOnClickListener(view -> showHome());
+        back.setMinHeight(dp(48));
+        back.setPadding(dp(10), 0, dp(10), 0);
+        back.setBackground(round(CARD, 14, LINE, 1));
+        back.setContentDescription(block > 0 ? "Voltar ao bloco anterior" : "Voltar aos treinos");
+        back.setClickable(true);
+        back.setFocusable(true);
+        back.setOnClickListener(view -> navigateBackFromBlock());
         toolbar.addView(back, weighted());
         TextView route = micro(
                 "TREINO " + WorkoutData.LETTERS[workout] + "  •  BLOCO " + (block + 1) + "/6",
@@ -356,7 +369,9 @@ public class MainActivity extends Activity {
         );
         route.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         toolbar.addView(route, wrap());
-        root.addView(toolbar, full(dp(42)));
+        LinearLayout.LayoutParams toolbarParams = full(dp(48));
+        toolbarParams.setMargins(0, 0, 0, dp(8));
+        root.addView(toolbar, toolbarParams);
 
         boolean finalizer = block == WorkoutData.BLOCKS_PER_WORKOUT - 1;
         LinearLayout intro = card(finalizer ? CYAN : ORANGE_DARK);
@@ -426,6 +441,15 @@ public class MainActivity extends Activity {
         root.addView(navigation, navParams);
 
         setContentView(scroll);
+        scroll.requestApplyInsets();
+    }
+
+    private void navigateBackFromBlock() {
+        if (currentWorkout >= 0 && currentBlock > 0) {
+            showBlock(currentWorkout, currentBlock - 1);
+        } else {
+            showHome();
+        }
     }
 
     private View createExercisePhoto(int workout, int exercise, String label) {
@@ -483,6 +507,8 @@ public class MainActivity extends Activity {
         tip.setPadding(0, 0, 0, dp(12));
         card.addView(tip, full());
 
+        card.addView(createLoadControl(workout, exercise), fullWithBottom(12));
+
         final int[] liveMask = {getMask(workout, exercise)};
         int totalSets = WorkoutData.SETS[workout][exercise];
         TextView setCounter = micro(setCount(liveMask[0], totalSets) + " DE " + totalSets + " CONCLUÍDAS", ORANGE);
@@ -507,6 +533,109 @@ public class MainActivity extends Activity {
             card.addView(setButton, fullWithBottom(8, 47));
         }
         return card;
+    }
+
+    private View createLoadControl(int workout, int exercise) {
+        LinearLayout control = horizontal();
+        control.setPadding(dp(12), dp(10), dp(10), dp(10));
+        control.setBackground(round(OBSIDIAN, 16, LINE, 1));
+
+        LinearLayout copy = vertical();
+        copy.addView(micro("PROGRESSÃO DE CARGA", CYAN), full());
+        String savedLoad = getLoad(workout, exercise);
+        TextView helper = body(
+                savedLoad.isEmpty() ? "Registre o peso usado neste exercício." : "A carga fica salva até você editar.",
+                11,
+                MUTED
+        );
+        helper.setPadding(0, dp(3), dp(8), 0);
+        copy.addView(helper, full());
+        control.addView(copy, weighted());
+
+        Button loadButton = smallButton(loadButtonText(savedLoad), true);
+        loadButton.setTextColor(savedLoad.isEmpty() ? ORANGE : WHITE);
+        loadButton.setOnClickListener(view -> showLoadDialog(workout, exercise, loadButton, helper));
+        control.addView(loadButton, fixed(118, 46));
+        return control;
+    }
+
+    private void showLoadDialog(
+            int workout,
+            int exercise,
+            Button loadButton,
+            TextView helper
+    ) {
+        String savedLoad = getLoad(workout, exercise);
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setText(savedLoad.replace('.', ','));
+        input.setHint("Ex.: 12,5");
+        input.setSelectAllOnFocus(true);
+        input.setTextColor(WHITE);
+        input.setHintTextColor(MUTED);
+        input.setPadding(dp(14), dp(12), dp(14), dp(12));
+        input.setBackground(round(CARD_LIGHT, 14, ORANGE, 1));
+
+        FrameLayout field = new FrameLayout(this);
+        field.setPadding(dp(20), dp(6), dp(20), 0);
+        field.addView(input, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Carga de " + WorkoutData.NAMES[workout][exercise])
+                .setMessage("Digite o peso em kg. Ele continuará salvo nos próximos treinos.")
+                .setView(field)
+                .setNegativeButton("CANCELAR", null)
+                .setNeutralButton("LIMPAR", (ignored, which) -> {
+                    preferences.edit().remove(loadKey(workout, exercise)).apply();
+                    refreshLoadControl(loadButton, helper, "");
+                })
+                .setPositiveButton("SALVAR", (ignored, which) -> {
+                    String normalized = normalizeLoad(input.getText().toString());
+                    if (normalized == null) {
+                        Toast.makeText(this, "Digite uma carga válida em kg.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    preferences.edit().putString(loadKey(workout, exercise), normalized).apply();
+                    refreshLoadControl(loadButton, helper, normalized);
+                })
+                .create();
+
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ORANGE);
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(CYAN);
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(MUTED);
+            input.requestFocus();
+        });
+        dialog.show();
+    }
+
+    private void refreshLoadControl(Button loadButton, TextView helper, String load) {
+        loadButton.setText(loadButtonText(load));
+        loadButton.setTextColor(load.isEmpty() ? ORANGE : WHITE);
+        helper.setText(load.isEmpty()
+                ? "Registre o peso usado neste exercício."
+                : "A carga fica salva até você editar.");
+    }
+
+    private String normalizeLoad(String value) {
+        String cleaned = value.trim().replace(',', '.');
+        if (cleaned.isEmpty()) return "";
+        try {
+            BigDecimal load = new BigDecimal(cleaned);
+            if (load.signum() < 0 || load.compareTo(new BigDecimal("1000")) > 0) return null;
+            return load.stripTrailingZeros().toPlainString();
+        } catch (NumberFormatException error) {
+            return null;
+        }
+    }
+
+    private String loadButtonText(String load) {
+        if (load.isEmpty()) return "+ CARGA";
+        return load.replace('.', ',') + " KG";
     }
 
     private void finishWorkout(int workout) {
@@ -561,7 +690,7 @@ public class MainActivity extends Activity {
         scroll.setBackgroundColor(BLACK);
         scroll.setFillViewport(true);
         LinearLayout root = vertical();
-        root.setPadding(dp(16), dp(16), dp(16), dp(34));
+        applySafeTopPadding(scroll, root, 16, 20, 16, 34);
         scroll.addView(root, full());
 
         TextView back = micro("‹  VOLTAR PARA O INÍCIO", ORANGE);
@@ -642,6 +771,7 @@ public class MainActivity extends Activity {
         root.addView(footer, full());
 
         setContentView(scroll);
+        scroll.requestApplyInsets();
     }
 
     private View setupStep(String number, String title, String detail, String status, int statusColor) {
@@ -751,7 +881,7 @@ public class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.setBackgroundColor(BLACK);
         LinearLayout root = vertical();
-        root.setPadding(dp(16), dp(16), dp(16), dp(34));
+        applySafeTopPadding(scroll, root, 16, 20, 16, 34);
         scroll.addView(root, full());
 
         TextView back = micro("‹  VOLTAR PARA O INÍCIO", ORANGE);
@@ -818,6 +948,7 @@ public class MainActivity extends Activity {
         home.setOnClickListener(view -> showHome());
         root.addView(home, full(dp(56)));
         setContentView(scroll);
+        scroll.requestApplyInsets();
     }
 
     private View createProgressRow(int workout) {
@@ -913,6 +1044,14 @@ public class MainActivity extends Activity {
 
     private String maskKey(int workout, int exercise) {
         return weekKey() + "_w" + workout + "_e" + exercise;
+    }
+
+    private String loadKey(int workout, int exercise) {
+        return "load_w" + workout + "_e" + exercise;
+    }
+
+    private String getLoad(int workout, int exercise) {
+        return preferences.getString(loadKey(workout, exercise), "");
     }
 
     private String workoutStartKey(int workout) {
@@ -1011,6 +1150,27 @@ public class MainActivity extends Activity {
         int count = 0;
         for (int set = 0; set < totalSets; set++) if ((mask & (1 << set)) != 0) count++;
         return count;
+    }
+
+    private void applySafeTopPadding(
+            View host,
+            LinearLayout content,
+            int left,
+            int topSpacing,
+            int right,
+            int bottom
+    ) {
+        content.setPadding(dp(left), dp(topSpacing), dp(right), dp(bottom));
+        host.setOnApplyWindowInsetsListener((view, insets) -> {
+            int statusBarHeight = insets.getSystemWindowInsetTop();
+            content.setPadding(
+                    dp(left),
+                    statusBarHeight + dp(topSpacing),
+                    dp(right),
+                    dp(bottom)
+            );
+            return insets;
+        });
     }
 
     private LinearLayout vertical() {

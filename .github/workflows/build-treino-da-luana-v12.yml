@@ -40,20 +40,30 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Compilar APKs da V12
+      - name: Preparar assinatura estável do teste Xiaomi
         working-directory: treino-da-luana/v12
-        run: gradle :app:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
+        run: |
+          if [ ! -f test-only-signing.jks ]; then
+            keytool -genkeypair \
+              -keystore test-only-signing.jks \
+              -storepass TreinoLuaV12Teste2026 \
+              -alias treino-lua-xiaomi-test \
+              -keypass TreinoLuaV12Teste2026 \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Treino da Luana Xiaomi Teste, O=R4, C=BR"
+          fi
+
+      - name: Compilar APK da V12 para Xiaomi
+        working-directory: treino-da-luana/v12
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Publicar APK do Xiaomi
         uses: actions/upload-artifact@v4
         with:
-          name: Treino-da-Luana-v12-Xiaomi
-          path: treino-da-luana/v12/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      - name: Publicar APK do Galaxy Watch8
-        uses: actions/upload-artifact@v4
-        with:
-          name: Treino-da-Luana-v12-Galaxy-Watch8
-          path: treino-da-luana/v12/wear/build/outputs/apk/debug/wear-debug.apk
+          name: Treino-da-Luana-v12-Xiaomi-teste
+          path: |
+            treino-da-luana/v12/app/build/outputs/apk/debug/app-debug.apk
+            treino-da-luana/v12/test-only-signing.jks
           if-no-files-found: error
