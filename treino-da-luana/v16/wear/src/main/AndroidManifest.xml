@@ -10,10 +10,10 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_watch_app"
+        android:icon="@drawable/ic_watch_wellness"
         android:label="Treino da Luana"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <meta-data
             android:name="com.google.android.wearable.standalone"

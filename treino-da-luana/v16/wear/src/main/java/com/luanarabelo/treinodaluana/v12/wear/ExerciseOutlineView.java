@@ -12,11 +12,11 @@ final class ExerciseOutlineView extends View {
 
     ExerciseOutlineView(Context context) {
         super(context);
-        body.setColor(Color.rgb(244, 245, 247));
+        body.setColor(Color.rgb(105, 84, 70));
         body.setStyle(Paint.Style.STROKE);
         body.setStrokeWidth(dp(2));
         body.setStrokeCap(Paint.Cap.ROUND);
-        accent.setColor(Color.rgb(255, 138, 61));
+        accent.setColor(Color.rgb(190, 174, 154));
         accent.setStyle(Paint.Style.STROKE);
         accent.setStrokeWidth(dp(3));
         accent.setStrokeCap(Paint.Cap.ROUND);

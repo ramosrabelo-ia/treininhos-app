@@ -8,6 +8,8 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -35,14 +37,14 @@ import java.io.InputStream;
 import java.util.Locale;
 
 public final class WatchMainActivity extends Activity implements DataClient.OnDataChangedListener {
-    private static final int BG = Color.rgb(7, 7, 7);
-    private static final int OBSIDIAN = Color.rgb(16, 16, 16);
-    private static final int CARD = Color.rgb(26, 26, 28);
-    private static final int CARD_DONE = Color.rgb(83, 43, 23);
-    private static final int LINE = Color.rgb(74, 66, 62);
-    private static final int WHITE = Color.rgb(247, 243, 239);
-    private static final int MUTED = Color.rgb(170, 162, 157);
-    private static final int ORANGE = Color.rgb(255, 138, 61);
+    private static final int BG = Color.rgb(247, 244, 238);
+    private static final int OBSIDIAN = Color.rgb(231, 223, 212);
+    private static final int CARD = Color.rgb(253, 251, 247);
+    private static final int CARD_DONE = Color.rgb(216, 204, 189);
+    private static final int LINE = Color.rgb(220, 211, 200);
+    private static final int WHITE = Color.rgb(62, 50, 43);
+    private static final int MUTED = Color.rgb(132, 113, 99);
+    private static final int ORANGE = Color.rgb(105, 84, 70);
 
     private static final int SCREEN_HOME = 0;
     private static final int SCREEN_WORKOUT = 1;
@@ -68,6 +70,9 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         Window window = getWindow();
         window.setStatusBarColor(BG);
         window.setNavigationBarColor(BG);
+        window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        );
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         WatchProgressSync.prepareWeek(this);
         if (Build.VERSION.SDK_INT >= 33
@@ -282,6 +287,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             ImageView image = new ImageView(this);
             image.setImageBitmap(bitmap);
             image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            image.setColorFilter(monochromeFilter());
             photo.addView(image, new FrameLayout.LayoutParams(-1, -1));
         }
         row.addView(photo, new LinearLayout.LayoutParams(dp(54), dp(48)));
@@ -439,6 +445,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             ImageView image = new ImageView(this);
             image.setImageBitmap(bitmap);
             image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setColorFilter(monochromeFilter());
             image.setContentDescription("Demonstração de " + WorkoutData.NAMES[selectedWorkout][exercise]);
             frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
         } else {
@@ -522,9 +529,22 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         view.setTextColor(color);
         view.setTextSize(size);
         view.setGravity(centered ? Gravity.CENTER : Gravity.START | Gravity.CENTER_VERTICAL);
-        view.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         view.setIncludeFontPadding(false);
         return view;
+    }
+
+    private ColorMatrixColorFilter monochromeFilter() {
+        ColorMatrix saturation = new ColorMatrix();
+        saturation.setSaturation(0f);
+        ColorMatrix warmth = new ColorMatrix(new float[]{
+                0.94f, 0f, 0f, 0f, 12f,
+                0f, 0.90f, 0f, 0f, 10f,
+                0f, 0f, 0.84f, 0f, 8f,
+                0f, 0f, 0f, 1f, 0f
+        });
+        saturation.postConcat(warmth);
+        return new ColorMatrixColorFilter(saturation);
     }
 
     private void setShell(View header, View content, View footer) {

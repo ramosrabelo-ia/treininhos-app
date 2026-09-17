@@ -1,4 +1,0 @@
-7b086919fe89cf68d9c912e662ad04bcd22ba6eb769af3cdb31cc8044789f287  Treino-da-Luana-v15-Galaxy-Watch8-TESTE.apk
-ccbd988eb4072b8607ab89ed166ef1b593a7e5edc9e09322f52a6e3c08b40e5c  Treino-da-Luana-v15-Xiaomi-TESTE.apk
-dbc5080187c820d7809092c8953b49e92d70c8b88a3f68d6d29138c6ccd1f5f1  Treino-da-Luana-Watch8-Instalador-Windows-v15-TESTE.zip
-921ce6acca4cf4ee57cdb148138a19a3cb4008c8deac3370ebb098db51d9e7e9  Treino-da-Luana-v15-TESTE-COMPLETO.zip

@@ -1,78 +1,38 @@
-# Treino da Luana V18
-
-Código dos aplicativos Android e Wear OS usados no pacote de teste V18.
+# Arquitetura da versão atual
 
 ## Módulos
 
-| Pasta | Conteúdo |
-| --- | --- |
-| `app` | Aplicativo Android do Xiaomi, cargas, progresso e Health Connect |
-| `wear` | Aplicativo do Galaxy Watch8, duplas, séries e resumo final |
-| `installer-watch8` | Instalador guiado para Windows |
-| `docs/mockups` | Interfaces aprovadas em PNG e SVG |
+- `app`: Android, minSdk 26
+- `wear`: Wear OS, minSdk 30
 
-## Comportamento do relógio
+Os módulos usam o mesmo identificador de aplicação de teste e compartilham o domínio de treino em `WorkoutData`.
 
-* lista rolável de duplas com duas fotografias por cartão
-* entrada no primeiro exercício incompleto ao reabrir uma dupla
-* fotografia original como elemento principal da tela de exercício
-* séries tocáveis e reversíveis
-* progresso parcial preservado
-* botões circulares `‹` e `›` sempre visíveis na borda inferior segura
-* nome, repetições e carga em formato compacto para não disputar espaço com a foto
-* carga somente para consulta
-* finalização permitida com exercícios pendentes
-* resumo com tempo e exercícios concluídos
-* retorno automático ao início em 10 segundos
-* atividade contínua do Wear OS durante o treino, com atalho para voltar ao exercício atual
+## Estado local
 
-## Treinos reorganizados
+`SharedPreferences` mantém séries concluídas, cargas, conclusão de exercícios e blocos, duração da sessão e check-in semanal.
 
-* `A` — superior push com crucifixo no banco e finalizador abdominal duplo
-* `B` — inferior com mais aparelhos e leg press/panturrilha na mesma estação
-* `C` — superior pull simplificado, com apenas uma rosca direta
-* `D` — posterior com máquinas de flexora, glúteo e hip thrust, sem stiff ou terra
+## Sincronização
 
-A V18 preserva a meta de quatro semanas, o histórico semanal, as cargas e a sincronização entre celular e relógio.
-O Samsung Health continua recebendo o resumo pelo Health Connect; durante a sessão, o relógio mantém o Treino da Luana acessível como atividade contínua independente.
+`PhoneProgressSync` e `WatchProgressSync` trocam progresso pelo Wear OS Data Layer. A sincronização não depende de servidor próprio.
 
-## Instalar no Galaxy Watch8 pelo computador
+`WatchOngoingActivity` mantém um indicador do treino em andamento e um atalho de retorno no relógio.
 
-### 1. Mostrar as opções do desenvolvedor
+`HealthConnectBridge` registra opcionalmente a sessão concluída. O aplicativo não lê métricas de saúde.
 
-1. No relógio, abra **Configurações**.
-2. Entre em **Sobre o relógio** e depois em **Informações do software** ou **Versões**.
-3. Localize **Número da versão / Build number** e toque sete vezes.
-4. Digite o PIN do relógio, se solicitado. A mensagem de modo desenvolvedor será exibida.
-5. Volte à tela principal de **Configurações**. O item **Opções do desenvolvedor** aparecerá próximo ao final da lista.
+## Interface V19
 
-### 2. Ativar a conexão com o computador
+O sistema visual utiliza superfícies claras, contraste cacau e imagens monocromáticas. O relógio não usa fundo preto em nenhuma tela estrutural. Os controles preservam áreas de toque compatíveis com a tela circular.
 
-1. Conecte o relógio e o computador à mesma rede Wi-Fi privada.
-2. Abra **Configurações > Opções do desenvolvedor**.
-3. Ative **Depuração ADB**.
-4. Ative **Depuração sem fio** e confirme **Permitir nesta rede**.
-5. Abra **Depuração sem fio**. Anote o IP e a **porta de conexão** mostrados na tela principal.
-6. Toque em **Emparelhar novo dispositivo**. Anote o código de seis números e o IP com a **porta de emparelhamento**.
+## Versionamento
 
-> A porta de emparelhamento e a porta de conexão são diferentes. O código expira; mantenha a tela de emparelhamento aberta durante o procedimento.
+- `versionCode 21`
+- `versionName 19.0-organic-wellness`
 
-### 3. Instalar pelo Windows
+O nome interno da pasta permanece `v16` por estabilidade do projeto.
 
-1. Baixe e extraia completamente o ZIP do instalador da V18.
-2. Abra `INSTALAR-NO-WATCH8.bat`.
-3. Informe primeiro o IP e a porta de conexão.
-4. Quando solicitado, informe o IP e a porta de emparelhamento.
-5. Digite o código de seis números exibido no relógio.
-6. Aguarde a mensagem de instalação concluída.
-7. Depois do teste, desative **Depuração sem fio** e **Depuração ADB**.
+## Segurança
 
-O computador e o relógio precisam estar na mesma rede e ela deve permitir comunicação entre dispositivos. Redes corporativas e de convidados podem bloquear essa conexão; nesse caso, use uma rede doméstica ou um hotspot particular.
-
-## Build
-
-```bash
-gradle :app:assembleDebug :wear:assembleDebug --no-daemon
-```
-
-Para assinar como atualização da V14.1, use a mesma chave privada e configure localmente um `signing.properties`. Nunca envie a chave ou as senhas ao Git.
+- nenhuma chave de assinatura é versionada
+- `signing.properties` permanece ignorado
+- não existem tokens, credenciais ou endpoints privados no código
+- imagens e referências antigas não utilizadas não são empacotadas
