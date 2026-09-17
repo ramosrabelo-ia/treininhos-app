@@ -1,7 +1,9 @@
 package com.luanarabelo.treinodaluana.v12.wear;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -67,6 +70,11 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         window.setNavigationBarColor(BG);
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         WatchProgressSync.prepareWeek(this);
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 18);
+        }
         showHome();
     }
 
@@ -102,6 +110,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private void showHome() {
         cancelSummaryTimer();
+        WatchOngoingActivity.stop(this);
         screen = SCREEN_HOME;
         workout = -1;
         block = -1;
@@ -133,6 +142,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         workout = selectedWorkout;
         block = -1;
         ensureWorkoutStarted();
+        WatchOngoingActivity.show(this, workout, "Escolha a próxima dupla");
 
         LinearLayout content = contentColumn(10, 68);
         content.addView(label(WorkoutData.TYPES[workout], 8, ORANGE, true), fullWrapWithMargins(0, 1));
@@ -160,8 +170,9 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         ensureWorkoutStarted();
         screen = SCREEN_EXERCISE;
         block = selectedBlock;
-        exerciseOffset = Math.max(0, Math.min(offset, WorkoutData.blockSize(block) - 1));
+        exerciseOffset = Math.max(0, Math.min(offset, WorkoutData.blockSize(workout, block) - 1));
         int exercise = currentExercise();
+        WatchOngoingActivity.show(this, workout, WorkoutData.NAMES[workout][exercise]);
         String position = block == WorkoutData.BLOCKS_PER_WORKOUT - 1
                 ? "FINAL"
                 : (block + 1) + (exerciseOffset == 0 ? "A" : "B");
@@ -200,6 +211,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private void showSummary() {
         cancelSummaryTimer();
+        WatchOngoingActivity.stop(this);
         screen = SCREEN_SUMMARY;
         block = -1;
         summaryEnd = System.currentTimeMillis();
@@ -216,7 +228,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
         LinearLayout metrics = horizontal();
         metrics.addView(metric("TEMPO", elapsed(summaryEnd - summaryStart), WHITE), weightedHeight(39, 3));
-        metrics.addView(metric("EXERCÍCIOS", completedExercises(workout) + " / 11", ORANGE), weightedHeight(39, 0));
+        metrics.addView(metric("EXERCÍCIOS", completedExercises(workout) + " / "
+                + WorkoutData.NAMES[workout].length, ORANGE), weightedHeight(39, 0));
         content.addView(metrics, fullHeightWithMargins(39, 0, 5));
 
         int pending = WorkoutData.NAMES[workout].length - completedExercises(workout);
@@ -251,8 +264,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
                 : "DUPLA " + (selectedBlock + 1);
         card.addView(label((done ? "✓  " : "") + title, 9, done ? ORANGE : WHITE, true), fullWrapWithMargins(0, 5));
 
-        int start = WorkoutData.blockStart(selectedBlock);
-        int size = WorkoutData.blockSize(selectedBlock);
+        int start = WorkoutData.blockStart(workout, selectedBlock);
+        int size = WorkoutData.blockSize(workout, selectedBlock);
         for (int offset = 0; offset < size; offset++) {
             card.addView(exercisePreview(start + offset), fullHeightWithMargins(51, 0, offset + 1 < size ? 5 : 0));
         }
@@ -356,8 +369,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private void showExerciseByIndex(int exercise) {
         for (int targetBlock = 0; targetBlock < WorkoutData.BLOCKS_PER_WORKOUT; targetBlock++) {
-            int start = WorkoutData.blockStart(targetBlock);
-            int size = WorkoutData.blockSize(targetBlock);
+            int start = WorkoutData.blockStart(workout, targetBlock);
+            int size = WorkoutData.blockSize(workout, targetBlock);
             if (exercise >= start && exercise < start + size) {
                 showExercise(targetBlock, exercise - start);
                 return;
@@ -366,8 +379,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
     }
 
     private int firstIncompleteOffset(int selectedBlock) {
-        int start = WorkoutData.blockStart(selectedBlock);
-        int size = WorkoutData.blockSize(selectedBlock);
+        int start = WorkoutData.blockStart(workout, selectedBlock);
+        int size = WorkoutData.blockSize(workout, selectedBlock);
         for (int offset = 0; offset < size; offset++) {
             if (!isExerciseDone(workout, start + offset)) return offset;
         }
@@ -375,7 +388,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
     }
 
     private int currentExercise() {
-        return WorkoutData.blockStart(block) + exerciseOffset;
+        return WorkoutData.blockStart(workout, block) + exerciseOffset;
     }
 
     private void setExerciseDone(int selectedWorkout, int exercise, boolean done) {
@@ -388,15 +401,15 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private int blockForExercise(int exercise) {
         for (int index = 0; index < WorkoutData.BLOCKS_PER_WORKOUT; index++) {
-            int start = WorkoutData.blockStart(index);
-            if (exercise >= start && exercise < start + WorkoutData.blockSize(index)) return index;
+            int start = WorkoutData.blockStart(workout, index);
+            if (exercise >= start && exercise < start + WorkoutData.blockSize(workout, index)) return index;
         }
         return WorkoutData.BLOCKS_PER_WORKOUT - 1;
     }
 
     private boolean isBlockDone(int selectedWorkout, int selectedBlock) {
-        int start = WorkoutData.blockStart(selectedBlock);
-        for (int offset = 0; offset < WorkoutData.blockSize(selectedBlock); offset++) {
+        int start = WorkoutData.blockStart(selectedWorkout, selectedBlock);
+        for (int offset = 0; offset < WorkoutData.blockSize(selectedWorkout, selectedBlock); offset++) {
             if (!isExerciseDone(selectedWorkout, start + offset)) return false;
         }
         return true;

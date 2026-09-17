@@ -10,6 +10,7 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
+import com.luanarabelo.treinodaluana.v12.WorkoutData;
 
 import java.util.Calendar;
 import java.util.Map;
@@ -161,7 +162,8 @@ public final class WatchProgressSync {
         int workout = map.getInt("workout", -1);
         int exercise = map.getInt("exercise", -1);
         long timestamp = map.getLong("updated_at", 0L);
-        if (workout < 0 || workout >= 4 || exercise < 0 || exercise >= 11 || timestamp == 0L) return false;
+        if (workout < 0 || workout >= WorkoutData.NAMES.length || exercise < 0
+                || exercise >= WorkoutData.NAMES[workout].length || timestamp == 0L) return false;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (timestamp <= prefs.getLong(loadTimestampKey(workout, exercise), 0L)) return false;
         prefs.edit().putString(loadKey(workout, exercise), map.getString("load", ""))
@@ -174,7 +176,8 @@ public final class WatchProgressSync {
         int workout = map.getInt("workout", -1);
         int exercise = map.getInt("exercise", -1);
         long timestamp = map.getLong("updated_at", 0L);
-        if (workout < 0 || workout >= 4 || exercise < 0 || exercise >= 11 || timestamp == 0L) return false;
+        if (workout < 0 || workout >= WorkoutData.NAMES.length || exercise < 0
+                || exercise >= WorkoutData.NAMES[workout].length || timestamp == 0L) return false;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (timestamp <= prefs.getLong(setTimestampKey(workout, exercise), 0L)) return false;
         prefs.edit().putInt(seriesKey(workout, exercise), map.getInt("mask", 0))

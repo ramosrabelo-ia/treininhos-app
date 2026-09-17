@@ -1,6 +1,6 @@
-# Treino da Luana V16
+# Treino da Luana V18
 
-Código dos aplicativos Android e Wear OS usados no pacote de teste V16.
+Código dos aplicativos Android e Wear OS usados no pacote de teste V18.
 
 ## Módulos
 
@@ -24,8 +24,17 @@ Código dos aplicativos Android e Wear OS usados no pacote de teste V16.
 * finalização permitida com exercícios pendentes
 * resumo com tempo e exercícios concluídos
 * retorno automático ao início em 10 segundos
+* atividade contínua do Wear OS durante o treino, com atalho para voltar ao exercício atual
 
-Nenhuma fotografia, exercício, série, repetição ou carga da V15 foi alterada na V16.
+## Treinos reorganizados
+
+* `A` — superior push com crucifixo no banco e finalizador abdominal duplo
+* `B` — inferior com mais aparelhos e leg press/panturrilha na mesma estação
+* `C` — superior pull simplificado, com apenas uma rosca direta
+* `D` — posterior com máquinas de flexora, glúteo e hip thrust, sem stiff ou terra
+
+A V18 preserva a meta de quatro semanas, o histórico semanal, as cargas e a sincronização entre celular e relógio.
+O Samsung Health continua recebendo o resumo pelo Health Connect; durante a sessão, o relógio mantém o Treino da Luana acessível como atividade contínua independente.
 
 ## Instalar no Galaxy Watch8 pelo computador
 
@@ -50,7 +59,7 @@ Nenhuma fotografia, exercício, série, repetição ou carga da V15 foi alterada
 
 ### 3. Instalar pelo Windows
 
-1. Baixe e extraia completamente o ZIP do instalador da V16.
+1. Baixe e extraia completamente o ZIP do instalador da V18.
 2. Abra `INSTALAR-NO-WATCH8.bat`.
 3. Informe primeiro o IP e a porta de conexão.
 4. Quando solicitado, informe o IP e a porta de emparelhamento.
