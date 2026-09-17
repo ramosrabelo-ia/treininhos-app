@@ -27,8 +27,8 @@ android {
         applicationId 'com.luanarabelo.treinodaluana.v12'
         minSdk 30
         targetSdk 35
-        versionCode 20
-        versionName '18.1-gym-sem-rosto'
+        versionCode 21
+        versionName '19.0-organic-wellness'
     }
 
     buildTypes {

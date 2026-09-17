@@ -8,6 +8,8 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -43,17 +45,17 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     private static final String HEALTH_AVAILABLE = "health_connect_available";
     private static final String HEALTH_GRANTED = "health_connect_granted";
 
-    private static final int BLACK = Color.rgb(7, 7, 7);
-    private static final int OBSIDIAN = Color.rgb(16, 16, 16);
-    private static final int CARD = Color.rgb(24, 24, 24);
-    private static final int CARD_LIGHT = Color.rgb(31, 31, 31);
-    private static final int WHITE = Color.rgb(244, 239, 233);
-    private static final int MUTED = Color.rgb(166, 157, 149);
-    private static final int ORANGE = Color.rgb(255, 138, 61);
-    private static final int ORANGE_DARK = Color.rgb(111, 58, 27);
-    private static final int CYAN = Color.rgb(92, 200, 215);
-    private static final int GREEN = Color.rgb(117, 205, 139);
-    private static final int LINE = Color.rgb(58, 48, 42);
+    private static final int BLACK = Color.rgb(247, 244, 238);
+    private static final int OBSIDIAN = Color.rgb(231, 223, 212);
+    private static final int CARD = Color.rgb(253, 251, 247);
+    private static final int CARD_LIGHT = Color.rgb(239, 233, 224);
+    private static final int WHITE = Color.rgb(62, 50, 43);
+    private static final int MUTED = Color.rgb(132, 113, 99);
+    private static final int ORANGE = Color.rgb(105, 84, 70);
+    private static final int ORANGE_DARK = Color.rgb(190, 174, 154);
+    private static final int CYAN = Color.rgb(142, 119, 101);
+    private static final int GREEN = Color.rgb(117, 103, 83);
+    private static final int LINE = Color.rgb(222, 214, 203);
 
     private static final Locale PT_BR = new Locale("pt", "BR");
 
@@ -71,6 +73,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         super.onCreate(savedInstanceState);
         getWindow().setStatusBarColor(BLACK);
         getWindow().setNavigationBarColor(BLACK);
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        );
         preferences = getSharedPreferences("treino_v12", MODE_PRIVATE);
         healthConnectAvailable = preferences.getBoolean(HEALTH_AVAILABLE, false);
         healthPermissionGranted = preferences.getBoolean(HEALTH_GRANTED, false);
@@ -211,31 +216,31 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
         ImageView image = new ImageView(this);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        image.setContentDescription("Foto oficial da Luana");
-        image.setImageBitmap(loadAsset("heroes/hero_gym_v18.jpg"));
+        image.setContentDescription("Academia em tons naturais");
+        image.setImageBitmap(loadAsset("heroes/hero_wellness_v19.jpg"));
         hero.addView(image, frameMatch());
 
         View shade = new View(this);
         GradientDrawable gradient = new GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{Color.argb(238, 7, 7, 7), Color.argb(145, 7, 7, 7), Color.argb(18, 7, 7, 7)}
+                new int[]{Color.argb(225, 247, 244, 238), Color.argb(145, 247, 244, 238), Color.argb(5, 247, 244, 238)}
         );
         shade.setBackground(gradient);
         hero.addView(shade, frameMatch());
 
-        TextView chip = micro("CAPA OFICIAL", WHITE);
+        TextView chip = micro("MOVIMENTO E CUIDADO", WHITE);
         chip.setGravity(Gravity.CENTER);
-        chip.setBackground(round(Color.argb(180, 16, 16, 16), 14, ORANGE, 1));
-        FrameLayout.LayoutParams chipParams = new FrameLayout.LayoutParams(dp(126), dp(30));
+        chip.setBackground(round(Color.argb(220, 247, 244, 238), 14, ORANGE_DARK, 1));
+        FrameLayout.LayoutParams chipParams = new FrameLayout.LayoutParams(dp(178), dp(30));
         chipParams.gravity = Gravity.TOP | Gravity.START;
         chipParams.setMargins(dp(18), dp(18), 0, 0);
         hero.addView(chip, chipParams);
 
         LinearLayout copy = vertical();
-        TextView title = heading("TREINO DA\nLUANA", 31);
+        TextView title = heading("Seu corpo.\nSeu ritmo.", 32);
         title.setLineSpacing(0, 0.92f);
         copy.addView(title, full());
-        TextView subtitle = micro("V13  •  SAMSUNG SYNC", CYAN);
+        TextView subtitle = micro("TREINO DA LUANA  •  V19", CYAN);
         subtitle.setPadding(0, dp(7), 0, 0);
         copy.addView(subtitle, full());
 
@@ -494,12 +499,13 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
         image.setContentDescription("Demonstração de " + WorkoutData.NAMES[workout][exercise]);
         image.setImageBitmap(loadAsset(WorkoutData.imagePath(workout, exercise)));
+        image.setColorFilter(monochromeFilter());
         photo.addView(image, frameMatch());
 
         View shade = new View(this);
         GradientDrawable gradient = new GradientDrawable(
                 GradientDrawable.Orientation.BOTTOM_TOP,
-                new int[]{Color.argb(210, 7, 7, 7), Color.argb(0, 7, 7, 7)}
+                new int[]{Color.argb(185, 62, 50, 43), Color.argb(0, 62, 50, 43)}
         );
         shade.setBackground(gradient);
         FrameLayout.LayoutParams shadeParams = new FrameLayout.LayoutParams(
@@ -1255,8 +1261,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         view.setText(value);
         view.setTextColor(WHITE);
         view.setTextSize(size);
-        view.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        view.setLetterSpacing(0.02f);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        view.setLetterSpacing(-0.015f);
+        view.setIncludeFontPadding(false);
         return view;
     }
 
@@ -1265,8 +1272,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         view.setText(value);
         view.setTextColor(color);
         view.setTextSize(size);
-        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        view.setTypeface(Typeface.create("sans-serif", Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL).getStyle()));
         view.setLineSpacing(dp(2), 1.0f);
+        view.setIncludeFontPadding(false);
         return view;
     }
 
@@ -1275,8 +1283,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         view.setText(value);
         view.setTextColor(color);
         view.setTextSize(11);
-        view.setTypeface(Typeface.create("monospace", Typeface.BOLD));
-        view.setLetterSpacing(0.08f);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        view.setLetterSpacing(0.16f);
+        view.setIncludeFontPadding(false);
         return view;
     }
 
@@ -1287,8 +1296,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         button.setText(value);
         button.setTextSize(14);
         button.setTextColor(primary ? BLACK : ORANGE);
-        button.setTypeface(Typeface.create("monospace", Typeface.BOLD));
-        button.setBackground(round(primary ? ORANGE : CARD, 18, ORANGE, 1));
+        button.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+        button.setLetterSpacing(0.04f);
+        button.setBackground(round(primary ? ORANGE : CARD, 22, primary ? ORANGE : LINE, 1));
         return button;
     }
 
@@ -1298,9 +1308,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         button.setStateListAnimator(null);
         button.setText(value);
         button.setTextSize(12);
-        button.setTypeface(Typeface.create("monospace", Typeface.BOLD));
+        button.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
         button.setTextColor(enabled ? WHITE : Color.rgb(78, 75, 72));
-        button.setBackground(round(CARD, 16, enabled ? LINE : Color.rgb(35, 35, 35), 1));
+        button.setBackground(round(CARD, 20, enabled ? LINE : Color.rgb(232, 226, 217), 1));
         button.setEnabled(enabled);
         return button;
     }
@@ -1310,8 +1320,21 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         bar.setMax(100);
         bar.setProgress(progress);
         bar.setProgressTintList(ColorStateList.valueOf(ORANGE));
-        bar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(52, 46, 42)));
+        bar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(226, 219, 209)));
         return bar;
+    }
+
+    private ColorMatrixColorFilter monochromeFilter() {
+        ColorMatrix saturation = new ColorMatrix();
+        saturation.setSaturation(0f);
+        ColorMatrix warmth = new ColorMatrix(new float[]{
+                0.94f, 0f, 0f, 0f, 12f,
+                0f, 0.90f, 0f, 0f, 10f,
+                0f, 0f, 0.84f, 0f, 8f,
+                0f, 0f, 0f, 1f, 0f
+        });
+        saturation.postConcat(warmth);
+        return new ColorMatrixColorFilter(saturation);
     }
 
     private GradientDrawable round(int color, int radiusDp, int strokeColor, int strokeDp) {
