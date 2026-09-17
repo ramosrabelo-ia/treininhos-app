@@ -235,7 +235,8 @@ public final class PhoneProgressSync {
         if (workout < 0 || workout >= WorkoutData.LETTERS.length || start <= 0L || end <= start) return false;
         String title = "Treino da Luana " + WorkoutData.LETTERS[workout];
         String notes = WorkoutData.FOCUSES[workout] + ". "
-                + map.getInt("completed_exercises", 0) + " de 11 exercícios concluídos no relógio.";
+                + map.getInt("completed_exercises", 0) + " de "
+                + WorkoutData.NAMES[workout].length + " exercícios concluídos no relógio.";
         HealthConnectBridge.writeStrengthWorkout(context, title, notes, start, end, (success, message) -> {
             if (success) {
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
@@ -247,8 +248,8 @@ public final class PhoneProgressSync {
 
     private static void setBlockComplete(SharedPreferences prefs, String week, int workout,
                                          int block, boolean done) {
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         SharedPreferences.Editor editor = prefs.edit();
         for (int offset = 0; offset < size; offset++) {
             int exercise = start + offset;
@@ -277,8 +278,8 @@ public final class PhoneProgressSync {
 
     private static boolean isBlockComplete(SharedPreferences prefs, String week,
                                            int workout, int block) {
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         for (int offset = 0; offset < size; offset++) {
             int exercise = start + offset;
             int mask = prefs.getInt(maskKey(week, workout, exercise), 0);

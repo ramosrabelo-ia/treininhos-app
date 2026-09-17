@@ -416,8 +416,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         intro.addView(instruction, full());
         root.addView(intro, fullWithBottom(12));
 
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         if (size == 2) {
             LinearLayout photos = horizontal();
             View photoA = createExercisePhoto(workout, start, WorkoutData.exerciseLabel(block, 0));
@@ -1119,8 +1119,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     }
 
     private void syncBlock(int workout, int block) {
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         for (int offset = 0; offset < size; offset++) {
             int exercise = start + offset;
             PhoneProgressSync.publishExerciseMask(this, workout, exercise, getMask(workout, exercise));
@@ -1142,8 +1142,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     }
 
     private boolean isBlockComplete(int workout, int block) {
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         for (int offset = 0; offset < size; offset++) {
             if (!isExerciseComplete(workout, start + offset)) return false;
         }
@@ -1160,8 +1160,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     }
 
     private void markBlockComplete(int workout, int block) {
-        int start = WorkoutData.blockStart(block);
-        int size = WorkoutData.blockSize(block);
+        int start = WorkoutData.blockStart(workout, block);
+        int size = WorkoutData.blockSize(workout, block);
         for (int offset = 0; offset < size; offset++) markExerciseComplete(workout, start + offset);
     }
 
