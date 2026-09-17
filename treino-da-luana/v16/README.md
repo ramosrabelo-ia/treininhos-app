@@ -24,6 +24,7 @@ Código dos aplicativos Android e Wear OS usados no pacote de teste V18.
 * finalização permitida com exercícios pendentes
 * resumo com tempo e exercícios concluídos
 * retorno automático ao início em 10 segundos
+* atividade contínua do Wear OS durante o treino, com atalho para voltar ao exercício atual
 
 ## Treinos reorganizados
 
@@ -33,6 +34,7 @@ Código dos aplicativos Android e Wear OS usados no pacote de teste V18.
 * `D` — posterior com máquinas de flexora, glúteo e hip thrust, sem stiff ou terra
 
 A V18 preserva a meta de quatro semanas, o histórico semanal, as cargas e a sincronização entre celular e relógio.
+O Samsung Health continua recebendo o resumo pelo Health Connect; durante a sessão, o relógio mantém o Treino da Luana acessível como atividade contínua independente.
 
 ## Instalar no Galaxy Watch8 pelo computador
 
