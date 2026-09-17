@@ -212,7 +212,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         ImageView image = new ImageView(this);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
         image.setContentDescription("Foto oficial da Luana");
-        image.setImageBitmap(loadAsset("heroes/hero_official.jpg"));
+        image.setImageBitmap(loadAsset("heroes/hero_gym_v18.jpg"));
         hero.addView(image, frameMatch());
 
         View shade = new View(this);
