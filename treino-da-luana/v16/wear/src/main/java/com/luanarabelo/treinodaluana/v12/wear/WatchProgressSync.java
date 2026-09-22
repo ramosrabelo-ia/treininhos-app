@@ -88,6 +88,24 @@ public final class WatchProgressSync {
         Wearable.getDataClient(app).putDataItem(dataRequest);
     }
 
+    public static void publishLoad(Context context, int workout, int exercise, String load) {
+        Context app = context.getApplicationContext();
+        long timestamp = System.currentTimeMillis();
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putLong(loadTimestampKey(workout, exercise), timestamp).apply();
+        PutDataMapRequest request = PutDataMapRequest.create(LOAD_PATH_PREFIX + workout + "/" + exercise);
+        DataMap map = request.getDataMap();
+        map.putString("source", SOURCE);
+        map.putInt("workout", workout);
+        map.putInt("exercise", exercise);
+        map.putString("load", load);
+        map.putLong("updated_at", timestamp);
+        map.putLong("nonce", System.nanoTime());
+        PutDataRequest dataRequest = request.asPutDataRequest();
+        dataRequest.setUrgent();
+        Wearable.getDataClient(app).putDataItem(dataRequest);
+    }
+
     public static void publishWorkoutSummary(Context context, int workout, long startMillis,
                                              long endMillis, int completedExercises) {
         Context app = context.getApplicationContext();
@@ -180,7 +198,10 @@ public final class WatchProgressSync {
                 || exercise >= WorkoutData.NAMES[workout].length || timestamp == 0L) return false;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (timestamp <= prefs.getLong(setTimestampKey(workout, exercise), 0L)) return false;
-        prefs.edit().putInt(seriesKey(workout, exercise), map.getInt("mask", 0))
+        int mask = map.getInt("mask", 0);
+        boolean done = mask == (1 << WorkoutData.SETS[workout][exercise]) - 1;
+        prefs.edit().putInt(seriesKey(workout, exercise), mask)
+                .putBoolean("w" + workout + "_e" + exercise + "_done", done)
                 .putLong(setTimestampKey(workout, exercise), timestamp).apply();
         return true;
     }

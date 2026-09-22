@@ -1,4 +1,21 @@
-# Treino da Luana V18
+# Treino da Luana V19 — prévia de teste
+
+Esta versão reorganiza a tela por exercício: uma imagem grande, nome, repetições,
+carga e um único botão de conclusão. Cada integrante da dupla conserva seu próprio
+estado. Os pendentes são listados antes dos concluídos, e avançar de dupla não
+marca os exercícios automaticamente.
+
+Os APKs de teste usam o identificador `com.luanarabelo.treinodaluana.v12.v19test`
+nos dois aparelhos. São instalados ao lado da versão anterior: progresso e cargas
+da versão anterior não migram automaticamente para este teste.
+
+A carga continua salva por exercício e agora também pode ser alterada no relógio,
+com sincronização bidirecional pelo Wear OS Data Layer.
+
+As imagens novas de A1 e A2 foram incorporadas nos dois módulos. As imagens dos
+demais exercícios ainda são as referências anteriores; o acervo visual da V19
+segue em revisão. Os APKs gerados por CI são builds de validação, assinados com
+chave de depuração e podem exigir desinstalação da versão assinada anteriormente.
 
 Código dos aplicativos Android e Wear OS usados no pacote de teste V18.
 

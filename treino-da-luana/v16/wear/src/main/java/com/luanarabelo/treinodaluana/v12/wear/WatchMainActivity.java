@@ -35,14 +35,14 @@ import java.io.InputStream;
 import java.util.Locale;
 
 public final class WatchMainActivity extends Activity implements DataClient.OnDataChangedListener {
-    private static final int BG = Color.rgb(7, 7, 7);
-    private static final int OBSIDIAN = Color.rgb(16, 16, 16);
-    private static final int CARD = Color.rgb(26, 26, 28);
-    private static final int CARD_DONE = Color.rgb(83, 43, 23);
-    private static final int LINE = Color.rgb(74, 66, 62);
-    private static final int WHITE = Color.rgb(247, 243, 239);
-    private static final int MUTED = Color.rgb(170, 162, 157);
-    private static final int ORANGE = Color.rgb(255, 138, 61);
+    private static final int BG = Color.rgb(250, 247, 241);
+    private static final int OBSIDIAN = Color.rgb(239, 232, 221);
+    private static final int CARD = Color.rgb(255, 252, 247);
+    private static final int CARD_DONE = Color.rgb(231, 238, 227);
+    private static final int LINE = Color.rgb(208, 192, 177);
+    private static final int WHITE = Color.rgb(54, 43, 38);
+    private static final int MUTED = Color.rgb(119, 106, 98);
+    private static final int ORANGE = Color.rgb(160, 93, 73);
 
     private static final int SCREEN_HOME = 0;
     private static final int SCREEN_WORKOUT = 1;
@@ -147,11 +147,14 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         LinearLayout content = contentColumn(10, 68);
         content.addView(label(WorkoutData.TYPES[workout], 8, ORANGE, true), fullWrapWithMargins(0, 1));
         content.addView(label("Escolha qualquer dupla", 7, MUTED, true), fullWrapWithMargins(0, 5));
-        for (int selectedBlock = 0; selectedBlock < WorkoutData.BLOCKS_PER_WORKOUT; selectedBlock++) {
-            final int targetBlock = selectedBlock;
-            View card = duoCard(selectedBlock);
-            card.setOnClickListener(v -> showExercise(targetBlock, firstIncompleteOffset(targetBlock)));
-            content.addView(card, fullWrapWithMargins(0, 7));
+        for (int pass = 0; pass < 2; pass++) {
+            for (int selectedBlock = 0; selectedBlock < WorkoutData.BLOCKS_PER_WORKOUT; selectedBlock++) {
+                if (isBlockDone(workout, selectedBlock) != (pass == 1)) continue;
+                final int targetBlock = selectedBlock;
+                View card = duoCard(selectedBlock);
+                card.setOnClickListener(v -> showExercise(targetBlock, firstIncompleteOffset(targetBlock)));
+                content.addView(card, fullWrapWithMargins(0, 7));
+            }
         }
         content.addView(spacer(18));
 
@@ -178,9 +181,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
                 : (block + 1) + (exerciseOffset == 0 ? "A" : "B");
 
         LinearLayout content = contentColumn(14, 3);
-        content.addView(label(WorkoutData.TYPES[workout], 6, ORANGE, true), fullWrapWithMargins(0, 2));
-        // Mostra o movimento inteiro: a foto é referência, não um recorte decorativo.
-        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(82, 0, 4));
+        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(105, 0, 4));
 
         TextView title = label(WorkoutData.NAMES[workout][exercise], 10, WHITE, true);
         title.setMaxLines(2);
@@ -188,10 +189,20 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         content.addView(title, fullWrapWithMargins(0, 2));
 
         String savedLoad = preferences.getString(loadKey(workout, exercise), "");
-        String details = compactReps(WorkoutData.REPS[workout][exercise])
-                + (savedLoad.isEmpty() ? "" : "  •  " + formatLoad(savedLoad));
-        content.addView(label(details, 6, MUTED, true), fullWrapWithMargins(0, 3));
-        content.addView(interactiveSeries(exercise), fullHeightWithMargins(31, 0, 4));
+        content.addView(label(compactReps(WorkoutData.REPS[workout][exercise]), 6, MUTED, true),
+                fullWrapWithMargins(0, 3));
+        LinearLayout loadRow = horizontal();
+        loadRow.setGravity(Gravity.CENTER);
+        TextView decrease = compactButton("−", false, 8);
+        decrease.setOnClickListener(v -> changeLoad(exercise, -1));
+        loadRow.addView(decrease, weightedHeight(26, 3));
+        TextView loadValue = label(savedLoad.isEmpty() ? "Carga —" : formatLoad(savedLoad), 8, WHITE, true);
+        loadValue.setGravity(Gravity.CENTER);
+        loadRow.addView(loadValue, weightedHeight(26, 3));
+        TextView increase = compactButton("+", false, 8);
+        increase.setOnClickListener(v -> changeLoad(exercise, 1));
+        loadRow.addView(increase, weightedHeight(26, 0));
+        content.addView(loadRow, fullHeightWithMargins(26, 0, 5));
 
         boolean done = isExerciseDone(workout, exercise);
         TextView complete = compactButton(done ? "✓  CONCLUÍDO" : "CONCLUIR EXERCÍCIO", false, 6);
@@ -266,8 +277,12 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
         int start = WorkoutData.blockStart(workout, selectedBlock);
         int size = WorkoutData.blockSize(workout, selectedBlock);
-        for (int offset = 0; offset < size; offset++) {
-            card.addView(exercisePreview(start + offset), fullHeightWithMargins(51, 0, offset + 1 < size ? 5 : 0));
+        for (int pass = 0; pass < 2; pass++) {
+            for (int offset = 0; offset < size; offset++) {
+                int exercise = start + offset;
+                if (isExerciseDone(workout, exercise) != (pass == 1)) continue;
+                card.addView(exercisePreview(exercise), fullHeightWithMargins(51, 0, 5));
+            }
         }
         return card;
     }
@@ -393,10 +408,24 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private void setExerciseDone(int selectedWorkout, int exercise, boolean done) {
         preferences.edit().putBoolean(exerciseDoneKey(selectedWorkout, exercise), done).apply();
+        int mask = done ? (1 << WorkoutData.SETS[selectedWorkout][exercise]) - 1 : 0;
+        WatchProgressSync.publishExerciseMask(this, selectedWorkout, exercise, mask);
         int selectedBlock = blockForExercise(exercise);
         boolean blockDone = isBlockDone(selectedWorkout, selectedBlock);
         preferences.edit().putBoolean(blockKey(selectedWorkout, selectedBlock), blockDone).apply();
         WatchProgressSync.publishBlock(this, selectedWorkout, selectedBlock, blockDone);
+    }
+
+    private void changeLoad(int exercise, int delta) {
+        String previous = preferences.getString(loadKey(workout, exercise), "");
+        double current;
+        try { current = Double.parseDouble(previous); }
+        catch (NumberFormatException ignored) { current = 0; }
+        double next = Math.max(0, Math.min(1000, current + delta));
+        String value = next == Math.floor(next) ? String.valueOf((int) next) : String.valueOf(next);
+        preferences.edit().putString(loadKey(workout, exercise), value).apply();
+        WatchProgressSync.publishLoad(this, workout, exercise, value);
+        showExercise(block, exerciseOffset);
     }
 
     private int blockForExercise(int exercise) {
@@ -438,7 +467,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         if (bitmap != null) {
             ImageView image = new ImageView(this);
             image.setImageBitmap(bitmap);
-            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
             image.setContentDescription("Demonstração de " + WorkoutData.NAMES[selectedWorkout][exercise]);
             frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
         } else {

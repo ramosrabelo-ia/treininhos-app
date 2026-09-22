@@ -27,13 +27,13 @@ android {
         applicationId 'com.luanarabelo.treinodaluana.v12'
         minSdk 30
         targetSdk 35
-        versionCode 20
-        versionName '18.1-gym-sem-rosto'
+        versionCode 22
+        versionName '20.0-instalacao-limpa'
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix '.xiaomitest'
+            applicationIdSuffix '.v20fresh'
             if (signingPropertiesFile.exists()) signingConfig signingConfigs.sharedTest
         }
     }

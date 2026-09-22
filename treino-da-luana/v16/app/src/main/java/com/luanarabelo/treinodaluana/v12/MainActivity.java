@@ -43,17 +43,17 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     private static final String HEALTH_AVAILABLE = "health_connect_available";
     private static final String HEALTH_GRANTED = "health_connect_granted";
 
-    private static final int BLACK = Color.rgb(7, 7, 7);
-    private static final int OBSIDIAN = Color.rgb(16, 16, 16);
-    private static final int CARD = Color.rgb(24, 24, 24);
-    private static final int CARD_LIGHT = Color.rgb(31, 31, 31);
-    private static final int WHITE = Color.rgb(244, 239, 233);
-    private static final int MUTED = Color.rgb(166, 157, 149);
-    private static final int ORANGE = Color.rgb(255, 138, 61);
-    private static final int ORANGE_DARK = Color.rgb(111, 58, 27);
-    private static final int CYAN = Color.rgb(92, 200, 215);
-    private static final int GREEN = Color.rgb(117, 205, 139);
-    private static final int LINE = Color.rgb(58, 48, 42);
+    private static final int BLACK = Color.rgb(250, 247, 241);
+    private static final int OBSIDIAN = Color.rgb(239, 232, 221);
+    private static final int CARD = Color.rgb(255, 252, 247);
+    private static final int CARD_LIGHT = Color.rgb(239, 232, 221);
+    private static final int WHITE = Color.rgb(54, 43, 38);
+    private static final int MUTED = Color.rgb(119, 106, 98);
+    private static final int ORANGE = Color.rgb(160, 93, 73);
+    private static final int ORANGE_DARK = Color.rgb(239, 232, 221);
+    private static final int CYAN = Color.rgb(128, 105, 89);
+    private static final int GREEN = Color.rgb(91, 128, 91);
+    private static final int LINE = Color.rgb(208, 192, 177);
 
     private static final Locale PT_BR = new Locale("pt", "BR");
 
@@ -410,7 +410,7 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         intro.setPadding(dp(15), dp(13), dp(15), dp(13));
         intro.addView(micro(WorkoutData.blockLabel(block), finalizer ? CYAN : ORANGE), full());
         TextView instruction = body(finalizer
-                ? "Feche o treino com o abdômen e marque as séries."
+                ? "Feche o treino com o abdômen."
                 : "Faça o A, vá direto para o B e descanse somente depois dos dois.", 14, WHITE);
         instruction.setPadding(0, dp(6), 0, 0);
         intro.addView(instruction, full());
@@ -418,25 +418,12 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
         int start = WorkoutData.blockStart(workout, block);
         int size = WorkoutData.blockSize(workout, block);
-        if (size == 2) {
-            LinearLayout photos = horizontal();
-            View photoA = createExercisePhoto(workout, start, WorkoutData.exerciseLabel(block, 0));
-            photos.addView(photoA, weightedPhoto(true));
-            View photoB = createExercisePhoto(workout, start + 1, WorkoutData.exerciseLabel(block, 1));
-            photos.addView(photoB, weightedPhoto(false));
-            root.addView(photos, fullWithBottom(18, 250));
-        } else {
-            root.addView(createExercisePhoto(workout, start, "ABS"), fullWithBottom(18, 345));
-        }
-
-        for (int offset = 0; offset < size; offset++) {
-            int exercise = start + offset;
-            root.addView(createExerciseLog(workout, block, exercise, offset), fullWithBottom(12));
-            if (offset == 0 && size == 2) {
-                TextView arrow = micro("DEPOIS  →  EXERCÍCIO " + WorkoutData.exerciseLabel(block, 1), CYAN);
-                arrow.setGravity(Gravity.CENTER);
-                arrow.setBackground(round(CARD_LIGHT, 14, CYAN, 1));
-                root.addView(arrow, fullWithBottom(12, 38));
+        // Pending exercises stay ahead of completed partners in the same duo.
+        for (int pass = 0; pass < 2; pass++) {
+            for (int offset = 0; offset < size; offset++) {
+                int exercise = start + offset;
+                if (isExerciseComplete(workout, exercise) != (pass == 1)) continue;
+                root.addView(createExerciseLog(workout, block, exercise, offset), fullWithBottom(12));
             }
         }
 
@@ -448,12 +435,9 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         restParams.setMargins(0, dp(3), 0, dp(18));
         root.addView(restTimerText, restParams);
 
-        String finishText = finalizer ? "FINALIZAR TREINO" : "CONCLUIR DUPLA E AVANÇAR";
+        String finishText = finalizer ? "FINALIZAR TREINO" : "PRÓXIMA DUPLA";
         Button finish = actionButton(finishText, true);
         finish.setOnClickListener(view -> {
-            markBlockComplete(workout, block);
-            updateWorkoutCheckin(workout);
-            syncBlock(workout, block);
             if (block < WorkoutData.BLOCKS_PER_WORKOUT - 1) {
                 showBlock(workout, block + 1);
             } else {
@@ -487,36 +471,15 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
 
     private View createExercisePhoto(int workout, int exercise, String label) {
         FrameLayout photo = new FrameLayout(this);
-        photo.setBackground(round(OBSIDIAN, 22, 0, 0));
+        photo.setBackground(round(CARD_LIGHT, 22, 0, 0));
         photo.setClipToOutline(true);
 
         ImageView image = new ImageView(this);
-        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
         image.setContentDescription("Demonstração de " + WorkoutData.NAMES[workout][exercise]);
         image.setImageBitmap(loadAsset(WorkoutData.imagePath(workout, exercise)));
         photo.addView(image, frameMatch());
 
-        View shade = new View(this);
-        GradientDrawable gradient = new GradientDrawable(
-                GradientDrawable.Orientation.BOTTOM_TOP,
-                new int[]{Color.argb(210, 7, 7, 7), Color.argb(0, 7, 7, 7)}
-        );
-        shade.setBackground(gradient);
-        FrameLayout.LayoutParams shadeParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                dp(95),
-                Gravity.BOTTOM
-        );
-        photo.addView(shade, shadeParams);
-
-        TextView chip = heading(label, 18);
-        chip.setTextColor(BLACK);
-        chip.setGravity(Gravity.CENTER);
-        chip.setBackground(round(ORANGE, 15, 0, 0));
-        FrameLayout.LayoutParams chipParams = new FrameLayout.LayoutParams(dp(54), dp(34));
-        chipParams.gravity = Gravity.TOP | Gravity.START;
-        chipParams.setMargins(dp(12), dp(12), 0, 0);
-        photo.addView(chip, chipParams);
         return photo;
     }
 
@@ -525,7 +488,8 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         card.setPadding(dp(15), dp(15), dp(15), dp(15));
 
         String label = WorkoutData.exerciseLabel(block, offset);
-        card.addView(micro(label + "  •  " + WorkoutData.TYPES[workout], CYAN), full());
+        card.addView(micro(label + (isExerciseComplete(workout, exercise) ? "  •  CONCLUÍDO" : "  •  PENDENTE"), CYAN), full());
+        card.addView(createExercisePhoto(workout, exercise, label), fullWithBottom(10, 320));
         TextView name = heading(WorkoutData.NAMES[workout][exercise], 23);
         name.setPadding(0, dp(5), 0, dp(5));
         card.addView(name, full());
@@ -536,36 +500,18 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         prescription.setPadding(0, 0, 0, dp(10));
         card.addView(prescription, full());
 
-        TextView tip = body(WorkoutData.TIPS[workout][exercise], 13, MUTED);
-        tip.setPadding(0, 0, 0, dp(12));
-        card.addView(tip, full());
-
         card.addView(createLoadControl(workout, exercise), fullWithBottom(12));
-
-        final int[] liveMask = {getMask(workout, exercise)};
-        int totalSets = WorkoutData.SETS[workout][exercise];
-        TextView setCounter = micro(setCount(liveMask[0], totalSets) + " DE " + totalSets + " CONCLUÍDAS", ORANGE);
-        setCounter.setPadding(0, 0, 0, dp(8));
-        card.addView(setCounter, full());
-
-        for (int set = 0; set < totalSets; set++) {
-            final int setIndex = set;
-            Button setButton = new Button(this);
-            setButton.setAllCaps(false);
-            setButton.setStateListAnimator(null);
-            styleSetButton(setButton, (liveMask[0] & (1 << setIndex)) != 0, setIndex, workout, exercise);
-            setButton.setOnClickListener(view -> {
-                ensureWorkoutStarted(workout);
-                liveMask[0] ^= (1 << setIndex);
-                saveMask(workout, exercise, liveMask[0]);
-                boolean checked = (liveMask[0] & (1 << setIndex)) != 0;
-                styleSetButton(setButton, checked, setIndex, workout, exercise);
-                setCounter.setText(setCount(liveMask[0], totalSets) + " DE " + totalSets + " CONCLUÍDAS");
-                updateWorkoutCheckin(workout);
-                syncBlock(workout, block);
-            });
-            card.addView(setButton, fullWithBottom(8, 47));
-        }
+        Button complete = actionButton(isExerciseComplete(workout, exercise)
+                ? "REABRIR EXERCÍCIO" : "CONCLUIR EXERCÍCIO", true);
+        complete.setOnClickListener(view -> {
+            ensureWorkoutStarted(workout);
+            if (isExerciseComplete(workout, exercise)) saveMask(workout, exercise, 0);
+            else markExerciseComplete(workout, exercise);
+            updateWorkoutCheckin(workout);
+            syncBlock(workout, block);
+            showBlock(workout, block);
+        });
+        card.addView(complete, full(dp(48)));
         return card;
     }
 
