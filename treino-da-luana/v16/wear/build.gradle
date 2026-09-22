@@ -27,13 +27,13 @@ android {
         applicationId 'com.luanarabelo.treinodaluana.v12'
         minSdk 30
         targetSdk 35
-        versionCode 21
-        versionName '19.0-imagens-e-conclusao'
+        versionCode 22
+        versionName '20.0-instalacao-limpa'
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix '.v19test'
+            applicationIdSuffix '.v20fresh'
             if (signingPropertiesFile.exists()) signingConfig signingConfigs.sharedTest
         }
     }
