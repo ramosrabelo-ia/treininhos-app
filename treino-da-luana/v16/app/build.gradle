@@ -34,7 +34,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix '.xiaomitest'
+            applicationIdSuffix '.v19test'
             versionNameSuffix '-xiaomi-test'
             if (signingPropertiesFile.exists()) signingConfig signingConfigs.sharedTest
         }

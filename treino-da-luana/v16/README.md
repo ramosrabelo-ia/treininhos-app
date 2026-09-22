@@ -5,6 +5,10 @@ carga e um único botão de conclusão. Cada integrante da dupla conserva seu pr
 estado. Os pendentes são listados antes dos concluídos, e avançar de dupla não
 marca os exercícios automaticamente.
 
+Os APKs de teste usam o identificador `com.luanarabelo.treinodaluana.v12.v19test`
+nos dois aparelhos. São instalados ao lado da versão anterior: progresso e cargas
+da versão anterior não migram automaticamente para este teste.
+
 A carga continua salva por exercício e agora também pode ser alterada no relógio,
 com sincronização bidirecional pelo Wear OS Data Layer.
 
