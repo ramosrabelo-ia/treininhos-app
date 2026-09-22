@@ -194,6 +194,7 @@ public final class PhoneProgressSync {
             DataMap map = DataMapItem.fromDataItem(item).getDataMap();
             if (SOURCE.equals(map.getString("source"))) return false;
             if (path.startsWith(SUMMARY_PATH_PREFIX)) return applyWorkoutSummary(context, map);
+            if (path.startsWith(LOAD_PATH_PREFIX)) return applyLoad(context, map);
             if (!weekKey().equals(map.getString("week"))) return false;
             if (path.startsWith(SET_PATH_PREFIX)) return applySetMask(context, map);
             if (!path.startsWith(BLOCK_PATH_PREFIX)) return false;
@@ -206,12 +207,29 @@ public final class PhoneProgressSync {
 
             SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             if (remoteTimestamp <= prefs.getLong(blockTimestampKey(workout, block), 0L)) return false;
-            setBlockComplete(prefs, weekKey(), workout, block, map.getBoolean("done", false));
+            // A partial duo must not erase its completed partner. Per-exercise masks
+            // carry the independent completion state.
+            if (map.getBoolean("done", false)) {
+                setBlockComplete(prefs, weekKey(), workout, block, true);
+            }
             prefs.edit().putLong(blockTimestampKey(workout, block), remoteTimestamp).apply();
             return true;
         } catch (RuntimeException ignored) {
             return false;
         }
+    }
+
+    private static boolean applyLoad(Context context, DataMap map) {
+        int workout = map.getInt("workout", -1);
+        int exercise = map.getInt("exercise", -1);
+        long timestamp = map.getLong("updated_at", 0L);
+        if (workout < 0 || workout >= WorkoutData.NAMES.length || exercise < 0
+                || exercise >= WorkoutData.NAMES[workout].length || timestamp == 0L) return false;
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (timestamp <= prefs.getLong(loadTimestampKey(workout, exercise), 0L)) return false;
+        prefs.edit().putString(loadKey(workout, exercise), map.getString("load", ""))
+                .putLong(loadTimestampKey(workout, exercise), timestamp).apply();
+        return true;
     }
 
     private static boolean applySetMask(Context context, DataMap map) {
@@ -223,8 +241,14 @@ public final class PhoneProgressSync {
                 || timestamp == 0L) return false;
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (timestamp <= prefs.getLong(setTimestampKey(workout, exercise), 0L)) return false;
-        prefs.edit().putInt(maskKey(weekKey(), workout, exercise), map.getInt("mask", 0))
+        int mask = map.getInt("mask", 0);
+        prefs.edit().putInt(maskKey(weekKey(), workout, exercise), mask)
                 .putLong(setTimestampKey(workout, exercise), timestamp).apply();
+        // Progress summaries read masks directly; refresh any previously completed
+        // workout check-in after a remote exercise is reopened.
+        if (mask == 0) {
+            prefs.edit().remove(weekKey() + "_checkin_" + workout).apply();
+        }
         return true;
     }
 
