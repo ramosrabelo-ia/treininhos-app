@@ -95,9 +95,16 @@ public final class MainActivity extends Activity {
             final int first = b * 2;
             String names = WorkoutData.NAMES[workout][first] + "\n" + WorkoutData.NAMES[workout][first + 1];
             String completed = (done(first) == 3 && done(first+1) == 3) ? "  ✓" : "";
-            add(c, button("DUPLA " + (b+1) + completed + "\n" + names, false, v -> showExercise(first)), 8);
+            add(c, button("DUPLA " + (b+1) + completed + "\n" + names, false, v -> openDuo(first)), 8);
         }
         add(c, button("FINALIZAR", false, v -> confirmFinish()), 0); list(c);
+    }
+    private void openDuo(int first) {
+        int offset = DuoSequence.nextOffset(done(first), done(first + 1));
+        if (offset < 0) {
+            new AlertDialog.Builder(this).setMessage("Dupla concluída. As séries continuam salvas.")
+                .setPositiveButton("OK", null).show();
+        } else showExercise(first + offset);
     }
     private void showExercise(int e) {
         screen = "exercise"; exercise = e;
@@ -118,10 +125,12 @@ public final class MainActivity extends Activity {
         String details = (load.isEmpty() ? "" : load + " kg") + (load.isEmpty() || reps.isEmpty() ? "" : "  •  ") + (reps.isEmpty()?"":reps + " rep.");
         if (!details.isEmpty()) add(overlay,text(details,9,WHITE,true),3);
         TextView edit = text("EDITAR CARGA / REPS",8,WHITE,true); edit.setMinHeight(dp(30)); edit.setOnClickListener(v -> edit(e)); add(overlay,edit,2);
-        add(overlay,button(marked < 2 ? "SÉRIE FEITA" : (e == 9 ? "CONCLUIR" : "PRÓXIMO"),true,v -> {
-            int mask = done(e);
-            if (mask != 3) { prefs.edit().putInt(setKey(e), (mask & 1) == 0 ? mask | 1 : mask | 2).apply(); showExercise(e); }
-            else if (e == 9) confirmFinish(); else showExercise(e+1);
+        add(overlay,button("SÉRIE FEITA",true,v -> {
+            int first = (e / 2) * 2;
+            int updated = DuoSequence.markNext(done(e));
+            prefs.edit().putInt(setKey(e), updated).apply();
+            int offset = DuoSequence.nextOffset(done(first), done(first + 1));
+            if (offset < 0) showWorkout(); else showExercise(first + offset);
         }),0);
         root.addView(overlay,new FrameLayout.LayoutParams(-1,-1)); setContentView(root);
     }
