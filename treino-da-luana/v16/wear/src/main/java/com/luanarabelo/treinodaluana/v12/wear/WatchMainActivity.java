@@ -159,40 +159,51 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         exerciseOffset = Math.max(0, Math.min(offset, WorkoutData.blockSize(workout, block) - 1));
         int exercise = currentExercise();
         WatchOngoingActivity.show(this, workout, WorkoutData.NAMES[workout][exercise]);
-        String position = (block + 1) + (exerciseOffset == 0 ? "A" : "B");
-
-        LinearLayout content = contentColumn(14, 3);
-        // A foto é referência do movimento; a altura deixa a linha de séries visível acima do botão.
-        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(62, 0, 3));
-
-        TextView title = label(WorkoutData.NAMES[workout][exercise], 9, WHITE, true);
-        title.setMaxLines(2);
-        title.setEllipsize(TextUtils.TruncateAt.END);
-        content.addView(title, fullWrapWithMargins(0, 2));
-
-        String savedLoad = preferences.getString(loadKey(workout, exercise), "");
-        String reps = preferences.getString(repsKey(workout, exercise), "");
-        String details = reps.isEmpty() ? "" : compactReps(reps);
-        if (!savedLoad.isEmpty()) details += (details.isEmpty() ? "" : "  •  ") + formatLoad(savedLoad);
-        if (!details.isEmpty()) content.addView(label(details, 6, MUTED, true), fullWrapWithMargins(0, 3));
-        TextView edit = compactButton("EDITAR CARGA E REPETIÇÕES", true, 7);
-        edit.setOnClickListener(v -> editExerciseValues(exercise));
-        content.addView(edit, fullHeightWithMargins(26, 0, 3));
-        content.addView(interactiveSeries(exercise), fullHeightWithMargins(30, 0, 0));
-
         int total = WorkoutData.SETS[workout][exercise];
         int marked = Integer.bitCount(seriesMask(workout, exercise));
         boolean lastExercise = exercise >= WorkoutData.NAMES[workout].length - 1;
         BottomAction action = WatchNavigation.bottomAction(Screen.EXERCISE, marked, total, lastExercise);
         int nextSeries = WatchNavigation.nextOpenSeries(seriesMask(workout, exercise), total) + 1;
+
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(BG);
+        ImageView photo = new ImageView(this);
+        Bitmap bitmap = loadBitmap(WorkoutData.imagePath(workout, exercise));
+        if (bitmap != null) photo.setImageBitmap(bitmap);
+        photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        photo.setContentDescription("Demonstração de " + WorkoutData.NAMES[workout][exercise]);
+        root.addView(photo, new FrameLayout.LayoutParams(-1, -1));
+
+        View shading = new View(this);
+        shading.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xBB000000, 0x22000000, 0xAA000000, 0xFF000000}));
+        root.addView(shading, new FrameLayout.LayoutParams(-1, -1));
+
+        LinearLayout overlay = vertical();
+        overlay.setGravity(Gravity.CENTER_HORIZONTAL);
+        overlay.setPadding(dp(25), dp(12), dp(25), dp(12));
+        TextView header = label(marked < total ? "SÉRIE " + (marked + 1) + " DE " + total
+                : "SÉRIES CONCLUÍDAS", 12, WHITE, true);
+        overlay.addView(header, new LinearLayout.LayoutParams(-1, dp(28)));
+        overlay.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
+        TextView title = label(WorkoutData.NAMES[workout][exercise], 13, WHITE, true);
+        title.setMaxLines(2);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        overlay.addView(title, fullWrapWithMargins(0, 2));
+        String savedLoad = preferences.getString(loadKey(workout, exercise), "");
+        String reps = preferences.getString(repsKey(workout, exercise), "");
+        String details = reps.isEmpty() ? "" : compactReps(reps) + " repetições";
+        if (!savedLoad.isEmpty()) details += (details.isEmpty() ? "" : "  •  ") + formatLoad(savedLoad);
+        if (!details.isEmpty()) overlay.addView(label(details, 8, WHITE, true), fullWrapWithMargins(0, 2));
+        TextView edit = label("EDITAR CARGA / REPS", 7, WHITE, true);
+        makeClickable(edit);
+        edit.setOnClickListener(v -> editExerciseValues(exercise));
+        overlay.addView(edit, fullHeightWithMargins(26, 0, 2));
         TextView primary = bottomButton(action, nextSeries, true);
         primary.setOnClickListener(v -> onExerciseBottomAction(exercise, total, lastExercise));
-
-        setShell(
-                header("TREINO " + WorkoutData.LETTERS[workout] + " • " + position),
-                content,
-                singleFooter(primary)
-        );
+        overlay.addView(primary, fullHeightWithMargins(44, 0, 0));
+        root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
     }
 
     private void editExerciseValues(int exercise) {
