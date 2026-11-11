@@ -147,8 +147,10 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
     private void refreshHealthStatus(boolean refreshVisibleScreen) {
         HealthConnectBridge.checkStatus(this, (available, granted) -> {
             boolean changed = available != healthConnectAvailable || granted != healthPermissionGranted;
+            boolean newlyGranted = granted && !healthPermissionGranted;
             healthConnectAvailable = available;
             healthPermissionGranted = granted;
+            if (newlyGranted) PhoneProgressSync.pullRemote(this, changedData -> {});
             preferences.edit()
                     .putBoolean(HEALTH_AVAILABLE, available)
                     .putBoolean(HEALTH_GRANTED, granted)
@@ -852,8 +854,10 @@ public class MainActivity extends Activity implements DataClient.OnDataChangedLi
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != HealthConnectBridge.PERMISSION_REQUEST_CODE) return;
         HealthConnectBridge.checkStatus(this, (available, granted) -> {
+            boolean newlyGranted = granted && !healthPermissionGranted;
             healthConnectAvailable = available;
             healthPermissionGranted = granted;
+            if (newlyGranted) PhoneProgressSync.pullRemote(this, changedData -> {});
             preferences.edit()
                     .putBoolean(HEALTH_AVAILABLE, available)
                     .putBoolean(HEALTH_GRANTED, granted)

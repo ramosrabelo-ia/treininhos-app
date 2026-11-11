@@ -228,17 +228,24 @@ public final class PhoneProgressSync {
         return true;
     }
 
+    private static final java.util.Set<String> IN_FLIGHT = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
     private static boolean applyWorkoutSummary(Context context, DataMap map) {
         int workout = map.getInt("workout", -1);
         long start = map.getLong("start_millis", 0L);
         long end = map.getLong("end_millis", 0L);
         if (workout < 0 || workout >= WorkoutData.LETTERS.length || start <= 0L || end <= start) return false;
+        String syncKey = "health_session_" + workout + "_" + start + "_" + end;
+        SharedPreferences syncPrefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (syncPrefs.getBoolean(syncKey, false) || !IN_FLIGHT.add(syncKey)) return false;
         String title = "Treino da Luana " + WorkoutData.LETTERS[workout];
         String notes = WorkoutData.FOCUSES[workout] + ". "
                 + map.getInt("completed_exercises", 0) + " de "
-                + WorkoutData.NAMES[workout].length + " exercícios concluídos no relógio.";
+                + 10 + " exercícios concluídos no relógio.";
         HealthConnectBridge.writeStrengthWorkout(context, title, notes, start, end, (success, message) -> {
+            IN_FLIGHT.remove(syncKey);
             if (success) {
+                syncPrefs.edit().putBoolean(syncKey, true).apply();
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                         .putBoolean(weekKey() + "_health_synced_" + workout, true).apply();
             }

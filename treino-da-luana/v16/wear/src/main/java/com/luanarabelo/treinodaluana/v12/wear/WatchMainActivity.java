@@ -2,6 +2,9 @@ package com.luanarabelo.treinodaluana.v12.wear;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.text.InputType;
+import android.widget.EditText;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -168,10 +171,13 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         content.addView(title, fullWrapWithMargins(0, 2));
 
         String savedLoad = preferences.getString(loadKey(workout, exercise), "");
-        String reps = WorkoutData.REPS[workout][exercise];
+        String reps = preferences.getString(repsKey(workout, exercise), "");
         String details = reps.isEmpty() ? "" : compactReps(reps);
         if (!savedLoad.isEmpty()) details += (details.isEmpty() ? "" : "  •  ") + formatLoad(savedLoad);
         if (!details.isEmpty()) content.addView(label(details, 6, MUTED, true), fullWrapWithMargins(0, 3));
+        TextView edit = compactButton("EDITAR CARGA E REPETIÇÕES", true, 7);
+        edit.setOnClickListener(v -> editExerciseValues(exercise));
+        content.addView(edit, fullHeightWithMargins(26, 0, 3));
         content.addView(interactiveSeries(exercise), fullHeightWithMargins(30, 0, 0));
 
         int total = WorkoutData.SETS[workout][exercise];
@@ -187,6 +193,29 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
                 content,
                 singleFooter(primary)
         );
+    }
+
+    private void editExerciseValues(int exercise) {
+        LinearLayout fields = vertical();
+        fields.setPadding(dp(24), dp(8), dp(24), dp(8));
+        EditText load = new EditText(this);
+        load.setSingleLine(true);
+        load.setHint("Carga em kg (opcional)");
+        load.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        load.setText(preferences.getString(loadKey(workout, exercise), ""));
+        fields.addView(load);
+        EditText reps = new EditText(this);
+        reps.setSingleLine(true);
+        reps.setHint("Repetições (opcional)");
+        reps.setInputType(InputType.TYPE_CLASS_NUMBER);
+        reps.setText(preferences.getString(repsKey(workout, exercise), ""));
+        fields.addView(reps);
+        new AlertDialog.Builder(this).setTitle("Dados do exercício").setView(fields)
+            .setPositiveButton("Salvar", (dialog, which) -> {
+                preferences.edit().putString(loadKey(workout, exercise), load.getText().toString().trim())
+                    .putString(repsKey(workout, exercise), reps.getText().toString().trim()).apply();
+                showExercise(block, exerciseOffset);
+            }).setNegativeButton("Cancelar", null).show();
     }
 
     /** Botão de baixo do exercício: marca a série; com todas marcadas, conclui e avança. */
@@ -259,6 +288,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             summaryStart = summaryEnd - 60_000L;
         }
         preferences.edit().remove(startKey(workout)).apply();
+        WatchProgressSync.publishWorkoutSummary(this, workout, summaryStart, summaryEnd,
+                completedExercises(workout));
 
         LinearLayout content = contentColumn(14, 14);
         ProgressRingView check = new ProgressRingView(this, 1, 1, "✓", "FINALIZADO");
@@ -275,7 +306,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         content.addView(label(pending == 0 ? "Todos os exercícios concluídos" : pending + " exercícios pendentes",
                 7, MUTED, true), fullWrapWithMargins(0, 5));
 
-        content.addView(label("Salvo neste relógio", 7, MUTED, true), fullWrapWithMargins(0, 5));
+        content.addView(label("Salvo no relógio • envio pendente ao celular", 7, MUTED, true), fullWrapWithMargins(0, 5));
 
         countdownView = label("Voltando ao início em 10 s", 7, MUTED, true);
         content.addView(countdownView, fullWrapWithMargins(0, 0));
@@ -639,6 +670,10 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private String loadKey(int selectedWorkout, int exercise) {
         return "load_w" + selectedWorkout + "_e" + exercise;
+    }
+
+    private String repsKey(int selectedWorkout, int exercise) {
+        return "reps_w" + selectedWorkout + "_e" + exercise;
     }
 
     private String startKey(int selectedWorkout) {
