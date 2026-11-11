@@ -40,6 +40,15 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Conferir regras de voltar e do botão de baixo
+        working-directory: treino-da-luana/v16
+        run: |
+          mkdir -p /tmp/navcheck
+          javac -encoding UTF-8 -d /tmp/navcheck \
+            wear/src/main/java/com/luanarabelo/treinodaluana/v12/wear/WatchNavigation.java \
+            docs/tools/WatchNavigationCheck.java
+          java -Dfile.encoding=UTF-8 -cp /tmp/navcheck WatchNavigationCheck
+
       - name: Compilar Xiaomi e Galaxy Watch8
         working-directory: treino-da-luana/v16
         run: gradle :app:assembleDebug :wear:assembleDebug --no-daemon --stacktrace
