@@ -11,13 +11,13 @@
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_watch_app"
-        android:label="Treino da Luana"
+        android:label="Treininhos Teste"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
         <meta-data
             android:name="com.google.android.wearable.standalone"
-            android:value="false" />
+            android:value="true" />
 
         <activity
             android:name=".WatchMainActivity"
@@ -27,17 +27,5 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".WatchProgressSyncService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
-                <data
-                    android:host="*"
-                    android:pathPrefix="/treino-lua/"
-                    android:scheme="wear" />
-            </intent-filter>
-        </service>
     </application>
 </manifest>

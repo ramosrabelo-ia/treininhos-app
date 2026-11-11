@@ -3,6 +3,8 @@ package com.luanarabelo.treinodaluana.v12.wear;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.text.InputType;
+import android.widget.EditText;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -29,6 +31,8 @@ import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.Wearable;
 import com.luanarabelo.treinodaluana.v12.WorkoutData;
+import com.luanarabelo.treinodaluana.v12.wear.WatchNavigation.BottomAction;
+import com.luanarabelo.treinodaluana.v12.wear.WatchNavigation.Screen;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,15 +48,12 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
     private static final int MUTED = Color.rgb(170, 162, 157);
     private static final int ORANGE = Color.rgb(255, 138, 61);
 
-    private static final int SCREEN_HOME = 0;
-    private static final int SCREEN_WORKOUT = 1;
-    private static final int SCREEN_EXERCISE = 2;
-    private static final int SCREEN_SUMMARY = 3;
     private static final String PREFS = "treino_v12_watch8";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SharedPreferences preferences;
-    private int screen = SCREEN_HOME;
+    private Screen screen = Screen.HOME;
+    private Screen confirmOrigin = Screen.WORKOUT;
     private int workout = -1;
     private int block = -1;
     private int exerciseOffset = 0;
@@ -69,7 +70,6 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         window.setStatusBarColor(BG);
         window.setNavigationBarColor(BG);
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
-        WatchProgressSync.prepareWeek(this);
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -81,15 +81,10 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
     @Override
     protected void onResume() {
         super.onResume();
-        Wearable.getDataClient(this).addListener(this);
-        WatchProgressSync.pullRemote(this, changed -> runOnUiThread(() -> {
-            if (changed) refreshCurrentScreen();
-        }));
     }
 
     @Override
     protected void onPause() {
-        Wearable.getDataClient(this).removeListener(this);
         super.onPause();
     }
 
@@ -101,24 +96,20 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-        boolean changed = false;
-        for (DataEvent event : WearBufferCompat.<DataEvent>iterable(dataEvents)) {
-            changed |= WatchProgressSync.applyEvent(this, event);
-        }
-        if (changed) runOnUiThread(this::refreshCurrentScreen);
+
     }
 
     private void showHome() {
         cancelSummaryTimer();
         WatchOngoingActivity.stop(this);
-        screen = SCREEN_HOME;
+        screen = Screen.HOME;
         workout = -1;
         block = -1;
 
         LinearLayout content = contentColumn(14, 14);
         int done = totalDoneBlocks();
         ProgressRingView ring = new ProgressRingView(this, done, WorkoutData.TOTAL_BLOCKS,
-                String.valueOf(done), "DE 24 DUPLAS");
+                String.valueOf(done), "DE 20 DUPLAS");
         content.addView(ring, centeredFixed(62, 62));
         content.addView(spacer(3));
 
@@ -129,16 +120,16 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             content.addView(card, fullWrapWithMargins(0, 4));
         }
         content.addView(spacer(22));
-        setShell(header("TREINO DA LUANA", true, false, this::finishAndRemoveTask), content, null);
+        setShell(header("TREINO DA LUANA"), content, null);
     }
 
     private void openWorkoutSynced(int selectedWorkout) {
-        WatchProgressSync.pullRemote(this, changed -> runOnUiThread(() -> showWorkout(selectedWorkout)));
+        showWorkout(selectedWorkout);
     }
 
     private void showWorkout(int selectedWorkout) {
         cancelSummaryTimer();
-        screen = SCREEN_WORKOUT;
+        screen = Screen.WORKOUT;
         workout = selectedWorkout;
         block = -1;
         ensureWorkoutStarted();
@@ -155,64 +146,152 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         }
         content.addView(spacer(18));
 
-        TextView finish = compactButton("FINALIZAR TREINO", true, 8);
-        finish.setOnClickListener(v -> showSummary());
-        setShell(
-                header("TREINO " + WorkoutData.LETTERS[workout], true, false,
-                        () -> confirmExitWorkout(this::showHome)),
-                content,
-                singleFooter(finish)
-        );
+        TextView finish = bottomButton(BottomAction.FINISH_FROM_LIST, 0, false);
+        finish.setOnClickListener(v -> requestFinish(Screen.WORKOUT));
+        setShell(header("TREINO " + WorkoutData.LETTERS[workout]), content, singleFooter(finish));
     }
 
     private void showExercise(int selectedBlock, int offset) {
         cancelSummaryTimer();
         ensureWorkoutStarted();
-        screen = SCREEN_EXERCISE;
+        screen = Screen.EXERCISE;
         block = selectedBlock;
         exerciseOffset = Math.max(0, Math.min(offset, WorkoutData.blockSize(workout, block) - 1));
         int exercise = currentExercise();
         WatchOngoingActivity.show(this, workout, WorkoutData.NAMES[workout][exercise]);
-        String position = block == WorkoutData.BLOCKS_PER_WORKOUT - 1
-                ? "FINAL"
-                : (block + 1) + (exerciseOffset == 0 ? "A" : "B");
+        int total = WorkoutData.SETS[workout][exercise];
+        int marked = Integer.bitCount(seriesMask(workout, exercise));
+        boolean lastExercise = exercise >= WorkoutData.NAMES[workout].length - 1;
+        BottomAction action = WatchNavigation.bottomAction(Screen.EXERCISE, marked, total, lastExercise);
+        int nextSeries = WatchNavigation.nextOpenSeries(seriesMask(workout, exercise), total) + 1;
 
-        LinearLayout content = contentColumn(14, 3);
-        content.addView(label(WorkoutData.TYPES[workout], 6, ORANGE, true), fullWrapWithMargins(0, 2));
-        // Mostra o movimento inteiro: a foto é referência, não um recorte decorativo.
-        content.addView(exerciseImage(workout, exercise), fullHeightWithMargins(82, 0, 4));
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(BG);
+        ImageView photo = new ImageView(this);
+        Bitmap bitmap = loadBitmap(WorkoutData.imagePath(workout, exercise));
+        if (bitmap != null) photo.setImageBitmap(bitmap);
+        photo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        photo.setContentDescription("Demonstração de " + WorkoutData.NAMES[workout][exercise]);
+        root.addView(photo, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView title = label(WorkoutData.NAMES[workout][exercise], 10, WHITE, true);
+        View shading = new View(this);
+        shading.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xBB000000, 0x22000000, 0xAA000000, 0xFF000000}));
+        root.addView(shading, new FrameLayout.LayoutParams(-1, -1));
+
+        LinearLayout overlay = vertical();
+        overlay.setGravity(Gravity.CENTER_HORIZONTAL);
+        overlay.setPadding(dp(25), dp(12), dp(25), dp(12));
+        TextView header = label(marked < total ? "SÉRIE " + (marked + 1) + " DE " + total
+                : "SÉRIES CONCLUÍDAS", 12, WHITE, true);
+        overlay.addView(header, new LinearLayout.LayoutParams(-1, dp(28)));
+        overlay.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
+        TextView title = label(WorkoutData.NAMES[workout][exercise], 13, WHITE, true);
         title.setMaxLines(2);
         title.setEllipsize(TextUtils.TruncateAt.END);
-        content.addView(title, fullWrapWithMargins(0, 2));
-
+        overlay.addView(title, fullWrapWithMargins(0, 2));
         String savedLoad = preferences.getString(loadKey(workout, exercise), "");
-        String details = compactReps(WorkoutData.REPS[workout][exercise])
-                + (savedLoad.isEmpty() ? "" : "  •  " + formatLoad(savedLoad));
-        content.addView(label(details, 6, MUTED, true), fullWrapWithMargins(0, 3));
-        content.addView(interactiveSeries(exercise), fullHeightWithMargins(31, 0, 4));
+        String reps = preferences.getString(repsKey(workout, exercise), "");
+        String details = reps.isEmpty() ? "" : compactReps(reps) + " repetições";
+        if (!savedLoad.isEmpty()) details += (details.isEmpty() ? "" : "  •  ") + formatLoad(savedLoad);
+        if (!details.isEmpty()) overlay.addView(label(details, 8, WHITE, true), fullWrapWithMargins(0, 2));
+        TextView edit = label("EDITAR CARGA / REPS", 7, WHITE, true);
+        makeClickable(edit);
+        edit.setOnClickListener(v -> editExerciseValues(exercise));
+        overlay.addView(edit, fullHeightWithMargins(26, 0, 2));
+        TextView primary = bottomButton(action, nextSeries, true);
+        primary.setOnClickListener(v -> onExerciseBottomAction(exercise, total, lastExercise));
+        overlay.addView(primary, fullHeightWithMargins(44, 0, 0));
+        root.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
+    }
 
-        boolean done = isExerciseDone(workout, exercise);
-        TextView complete = compactButton(done ? "✓  CONCLUÍDO" : "CONCLUIR EXERCÍCIO", false, 6);
-        complete.setOnClickListener(v -> {
-            setExerciseDone(workout, exercise, !isExerciseDone(workout, exercise));
+    private void editExerciseValues(int exercise) {
+        LinearLayout fields = vertical();
+        fields.setPadding(dp(24), dp(8), dp(24), dp(8));
+        EditText load = new EditText(this);
+        load.setSingleLine(true);
+        load.setHint("Carga em kg (opcional)");
+        load.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        load.setText(preferences.getString(loadKey(workout, exercise), ""));
+        fields.addView(load);
+        EditText reps = new EditText(this);
+        reps.setSingleLine(true);
+        reps.setHint("Repetições (opcional)");
+        reps.setInputType(InputType.TYPE_CLASS_NUMBER);
+        reps.setText(preferences.getString(repsKey(workout, exercise), ""));
+        fields.addView(reps);
+        new AlertDialog.Builder(this).setTitle("Dados do exercício").setView(fields)
+            .setPositiveButton("Salvar", (dialog, which) -> {
+                preferences.edit().putString(loadKey(workout, exercise), load.getText().toString().trim())
+                    .putString(repsKey(workout, exercise), reps.getText().toString().trim()).apply();
+                showExercise(block, exerciseOffset);
+            }).setNegativeButton("Cancelar", null).show();
+    }
+
+    /** Botão de baixo do exercício: marca a série; com todas marcadas, conclui e avança. */
+    private void onExerciseBottomAction(int exercise, int total, boolean lastExercise) {
+        int mask = seriesMask(workout, exercise);
+        BottomAction action = WatchNavigation.bottomAction(
+                Screen.EXERCISE, Integer.bitCount(mask), total, lastExercise);
+        if (action == BottomAction.MARK_SERIES) {
+            int open = WatchNavigation.nextOpenSeries(mask, total);
+            toggleSeries(exercise, open);
             showExercise(block, exerciseOffset);
-        });
-        content.addView(complete, fullHeightWithMargins(21, 0, 1));
+            return;
+        }
+        setExerciseDone(workout, exercise, true);
+        if (action == BottomAction.FINISH_WORKOUT) requestFinish(Screen.EXERCISE);
+        else showExerciseByIndex(exercise + 1);
+    }
 
-        setShell(
-                header("TREINO " + WorkoutData.LETTERS[workout] + " • " + position,
-                        true, true, () -> showWorkout(workout)),
-                content,
-                exerciseFooter(exercise)
-        );
+    private void toggleSeries(int exercise, int setIndex) {
+        int updated = seriesMask(workout, exercise) ^ (1 << setIndex);
+        preferences.edit().putInt(seriesKey(workout, exercise), updated).apply();
+        // Desmarcar uma série reabre o exercício; as demais marcações continuam salvas.
+        if (isExerciseDone(workout, exercise)
+                && Integer.bitCount(updated) < WorkoutData.SETS[workout][exercise]) {
+            setExerciseDone(workout, exercise, false);
+        }
+    }
+
+    /** Encerrar com pendências pede confirmação; sem pendências, vai direto ao resumo. */
+    private void requestFinish(Screen origin) {
+        int pending = WorkoutData.NAMES[workout].length - completedExercises(workout);
+        if (pending == 0) showSummary();
+        else showConfirmFinish(origin, pending);
+    }
+
+    private void showConfirmFinish(Screen origin, int pending) {
+        cancelSummaryTimer();
+        screen = Screen.CONFIRM_FINISH;
+        confirmOrigin = origin;
+
+        LinearLayout content = contentColumn(22, 8);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.addView(spacer(14));
+        content.addView(label("FINALIZAR AGORA?", 10, WHITE, true), fullWrapWithMargins(0, 6));
+        content.addView(label(pending + (pending == 1 ? " exercício ainda não foi concluído"
+                : " exercícios ainda não foram concluídos"), 7, MUTED, true), fullWrapWithMargins(0, 6));
+        content.addView(label("Tudo o que foi marcado fica salvo no relógio.", 7, MUTED, true),
+                fullWrapWithMargins(0, 0));
+
+        TextView confirm = bottomButton(BottomAction.CONFIRM_FINISH, 0, true);
+        confirm.setOnClickListener(v -> showSummary());
+        setShell(header("CONFIRMAR"), content, singleFooter(confirm));
+    }
+
+    private void goBackTo(Screen target) {
+        if (target == Screen.HOME) showHome();
+        else if (target == Screen.WORKOUT) showWorkout(workout);
+        else if (target == Screen.EXERCISE && block >= 0) showExercise(block, exerciseOffset);
+        else showWorkout(workout);
     }
 
     private void showSummary() {
         cancelSummaryTimer();
         WatchOngoingActivity.stop(this);
-        screen = SCREEN_SUMMARY;
+        screen = Screen.SUMMARY;
         block = -1;
         summaryEnd = System.currentTimeMillis();
         summaryStart = preferences.getLong(startKey(workout), summaryEnd - 60_000L);
@@ -220,6 +299,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             summaryStart = summaryEnd - 60_000L;
         }
         preferences.edit().remove(startKey(workout)).apply();
+        WatchProgressSync.publishWorkoutSummary(this, workout, summaryStart, summaryEnd,
+                completedExercises(workout));
 
         LinearLayout content = contentColumn(14, 14);
         ProgressRingView check = new ProgressRingView(this, 1, 1, "✓", "FINALIZADO");
@@ -236,19 +317,11 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         content.addView(label(pending == 0 ? "Todos os exercícios concluídos" : pending + " exercícios pendentes",
                 7, MUTED, true), fullWrapWithMargins(0, 5));
 
-        TextView sync = compactButton("SINCRONIZAR SAMSUNG HEALTH", true, 7);
-        sync.setOnClickListener(v -> {
-            WatchProgressSync.publishWorkoutSummary(this, workout, summaryStart, summaryEnd,
-                    completedExercises(workout));
-            sync.setText("SOLICITAÇÃO ENVIADA");
-            sync.setBackground(panel(CARD_DONE, ORANGE, 18));
-            sync.setTextColor(ORANGE);
-        });
-        content.addView(sync, fullHeightWithMargins(30, 0, 5));
+        content.addView(label("Salvo no relógio • envio pendente ao celular", 7, MUTED, true), fullWrapWithMargins(0, 5));
 
         countdownView = label("Voltando ao início em 10 s", 7, MUTED, true);
         content.addView(countdownView, fullWrapWithMargins(0, 0));
-        setShell(header("TREINO FINALIZADO", false, false, null), content, null);
+        setShell(header("TREINO FINALIZADO"), content, null);
         startSummaryTimer();
     }
 
@@ -259,9 +332,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         card.setBackground(panel(done ? CARD_DONE : CARD, done ? ORANGE : LINE, 18));
         makeClickable(card);
 
-        String title = selectedBlock == WorkoutData.BLOCKS_PER_WORKOUT - 1
-                ? "FINALIZADOR"
-                : "DUPLA " + (selectedBlock + 1);
+        String title = "DUPLA " + (selectedBlock + 1);
         card.addView(label((done ? "✓  " : "") + title, 9, done ? ORANGE : WHITE, true), fullWrapWithMargins(0, 5));
 
         int start = WorkoutData.blockStart(workout, selectedBlock);
@@ -313,9 +384,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
             button.setBackground(panel(checked ? ORANGE : CARD, checked ? ORANGE : LINE, 16));
             makeClickable(button);
             button.setOnClickListener(v -> {
-                int updated = seriesMask(workout, exercise) ^ (1 << setIndex);
-                preferences.edit().putInt(seriesKey(workout, exercise), updated).apply();
-                WatchProgressSync.publishExerciseMask(this, workout, exercise, updated);
+                toggleSeries(exercise, setIndex);
                 showExercise(block, exerciseOffset);
             });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(26), dp(26));
@@ -325,45 +394,10 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         return row;
     }
 
-    private View exerciseFooter(int exercise) {
-        LinearLayout footer = horizontal();
-        footer.setGravity(Gravity.CENTER);
-
-        TextView previous = circularNavigation("‹", false);
-        previous.setOnClickListener(v -> {
-            if (exercise <= 0) showWorkout(workout);
-            else showExerciseByIndex(exercise - 1);
-        });
-        footer.addView(previous, new LinearLayout.LayoutParams(dp(34), dp(34)));
-
-        TextView finish = label("FINALIZAR", 6, MUTED, true);
-        makeClickable(finish);
-        finish.setOnClickListener(v -> showSummary());
-        LinearLayout.LayoutParams finishParams = new LinearLayout.LayoutParams(dp(72), dp(34));
-        finishParams.setMargins(dp(5), 0, dp(5), 0);
-        footer.addView(finish, finishParams);
-
-        TextView next = circularNavigation(
-                exercise >= WorkoutData.NAMES[workout].length - 1 ? "✓" : "›", true);
-        next.setOnClickListener(v -> {
-            if (exercise >= WorkoutData.NAMES[workout].length - 1) showSummary();
-            else showExerciseByIndex(exercise + 1);
-        });
-        footer.addView(next, new LinearLayout.LayoutParams(dp(34), dp(34)));
-        return footer;
-    }
-
-    private TextView circularNavigation(String symbol, boolean filled) {
-        TextView button = label(symbol, 18, filled ? BG : WHITE, true);
-        button.setBackground(panel(filled ? ORANGE : CARD, filled ? ORANGE : LINE, 17));
-        makeClickable(button);
-        return button;
-    }
-
     private View singleFooter(TextView button) {
         LinearLayout footer = vertical();
         footer.setGravity(Gravity.CENTER_HORIZONTAL);
-        footer.addView(button, centeredWidthHeight(62, 24));
+        footer.addView(button, centeredWrapMinWidth(48));
         return footer;
     }
 
@@ -396,7 +430,6 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         int selectedBlock = blockForExercise(exercise);
         boolean blockDone = isBlockDone(selectedWorkout, selectedBlock);
         preferences.edit().putBoolean(blockKey(selectedWorkout, selectedBlock), blockDone).apply();
-        WatchProgressSync.publishBlock(this, selectedWorkout, selectedBlock, blockDone);
     }
 
     private int blockForExercise(int exercise) {
@@ -459,7 +492,7 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private TextView workoutCard(int selectedWorkout, int done) {
         String value = "TREINO " + WorkoutData.LETTERS[selectedWorkout] + "\n"
-                + WorkoutData.TYPES[selectedWorkout] + "  •  " + done + "/6";
+                + WorkoutData.TYPES[selectedWorkout] + "  •  " + done + "/5";
         TextView view = label(value, 9, done == 6 ? ORANGE : WHITE, true);
         view.setLineSpacing(dp(1), 1f);
         view.setPadding(dp(9), dp(8), dp(9), dp(8));
@@ -477,36 +510,30 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         return card;
     }
 
-    private View header(String title, boolean showBack, boolean showDuos, Runnable backAction) {
+    /** Cabeçalho só com o título: o retorno é feito pelo botão ou gesto nativo do relógio. */
+    private View header(String title) {
         LinearLayout row = horizontal();
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dp(20), dp(5), dp(20), 0);
-
-        if (showBack) {
-            TextView back = label("‹", 18, ORANGE, true);
-            back.setBackground(panel(CARD, LINE, 18));
-            makeClickable(back);
-            back.setOnClickListener(v -> backAction.run());
-            row.addView(back, new LinearLayout.LayoutParams(dp(23), dp(23)));
-        } else {
-            row.addView(new View(this), new LinearLayout.LayoutParams(dp(23), dp(23)));
-        }
+        row.setPadding(dp(32), dp(5), dp(32), 0);
 
         TextView heading = label(title, 8, WHITE, true);
         heading.setMaxLines(1);
         heading.setEllipsize(TextUtils.TruncateAt.END);
         row.addView(heading, new LinearLayout.LayoutParams(0, dp(23), 1f));
-
-        if (showDuos) {
-            TextView duos = label("DUPLAS", 6, ORANGE, true);
-            duos.setBackground(panel(CARD, ORANGE, 16));
-            makeClickable(duos);
-            duos.setOnClickListener(v -> showWorkout(workout));
-            row.addView(duos, new LinearLayout.LayoutParams(dp(40), dp(23)));
-        } else {
-            row.addView(new View(this), new LinearLayout.LayoutParams(dp(23), dp(23)));
-        }
         return row;
+    }
+
+    /** Botão inferior de 48 dp de altura, ajustado ao texto e com largura mínima de 80 dp. */
+    private TextView bottomButton(BottomAction action, int nextSeriesNumber, boolean filled) {
+        TextView view = label(WatchNavigation.bottomLabel(action, nextSeriesNumber), 8,
+                filled ? BG : WHITE, true);
+        view.setPadding(dp(18), 0, dp(18), 0);
+        view.setMinWidth(dp(80));
+        view.setMinHeight(dp(48));
+        view.setBackground(panel(filled ? ORANGE : CARD, filled ? ORANGE : LINE, 24));
+        view.setContentDescription(WatchNavigation.bottomLabel(action, nextSeriesNumber));
+        makeClickable(view);
+        return view;
     }
 
     private TextView compactButton(String value, boolean filled, int size) {
@@ -541,12 +568,12 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(-1, -1);
         scrollParams.topMargin = dp(33);
-        scrollParams.bottomMargin = footer == null ? dp(8) : dp(51);
+        scrollParams.bottomMargin = footer == null ? dp(8) : dp(58);
         root.addView(scroll, scrollParams);
 
         if (footer != null) {
-            FrameLayout.LayoutParams footerParams = new FrameLayout.LayoutParams(-1, dp(43), Gravity.BOTTOM);
-            footerParams.setMargins(dp(28), 0, dp(28), dp(4));
+            FrameLayout.LayoutParams footerParams = new FrameLayout.LayoutParams(-1, dp(48), Gravity.BOTTOM);
+            footerParams.setMargins(dp(28), 0, dp(28), dp(8));
             root.addView(footer, footerParams);
         }
         setContentView(root);
@@ -589,15 +616,6 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         if (!preferences.contains(key)) preferences.edit().putLong(key, System.currentTimeMillis()).apply();
     }
 
-    private void confirmExitWorkout(Runnable confirmed) {
-        new AlertDialog.Builder(this)
-                .setTitle("Sair do treino?")
-                .setMessage("O progresso parcial ficará salvo.")
-                .setNegativeButton("CONTINUAR", null)
-                .setPositiveButton("SAIR", (dialog, which) -> confirmed.run())
-                .show();
-    }
-
     private void startSummaryTimer() {
         cancelSummaryTimer();
         summaryDeadline = System.currentTimeMillis() + 10_000L;
@@ -624,9 +642,10 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
     }
 
     private void refreshCurrentScreen() {
-        if (screen == SCREEN_HOME) showHome();
-        else if (screen == SCREEN_WORKOUT && workout >= 0) showWorkout(workout);
-        else if (screen == SCREEN_EXERCISE && workout >= 0 && block >= 0) showExercise(block, exerciseOffset);
+        if (screen == Screen.HOME) showHome();
+        else if (screen == Screen.WORKOUT && workout >= 0) showWorkout(workout);
+        else if (screen == Screen.EXERCISE && workout >= 0 && block >= 0) showExercise(block, exerciseOffset);
+        // Resumo e confirmação não são recriados por sincronização remota, para não perder o contexto.
     }
 
     private String compactReps(String reps) {
@@ -662,6 +681,10 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     private String loadKey(int selectedWorkout, int exercise) {
         return "load_w" + selectedWorkout + "_e" + exercise;
+    }
+
+    private String repsKey(int selectedWorkout, int exercise) {
+        return "reps_w" + selectedWorkout + "_e" + exercise;
     }
 
     private String startKey(int selectedWorkout) {
@@ -710,10 +733,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
         return params;
     }
 
-    private LinearLayout.LayoutParams centeredWidthHeight(int widthPercent, int height) {
-        int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                Math.round(screenWidth * widthPercent / 100f), dp(height));
+    private LinearLayout.LayoutParams centeredWrapMinWidth(int heightDp) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, dp(heightDp));
         params.gravity = Gravity.CENTER_HORIZONTAL;
         return params;
     }
@@ -730,14 +751,8 @@ public final class WatchMainActivity extends Activity implements DataClient.OnDa
 
     @Override
     public void onBackPressed() {
-        if (screen == SCREEN_HOME) {
-            finishAndRemoveTask();
-        } else if (screen == SCREEN_SUMMARY) {
-            showHome();
-        } else if (screen == SCREEN_EXERCISE) {
-            showWorkout(workout);
-        } else {
-            confirmExitWorkout(this::showHome);
-        }
+        Screen target = WatchNavigation.backTarget(screen, confirmOrigin);
+        if (target == null) finishAndRemoveTask();
+        else goBackTo(target);
     }
 }
