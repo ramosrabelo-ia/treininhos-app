@@ -68,6 +68,7 @@ public final class MainActivity extends Activity {
             final int w = i;
             add(c, button("TREINO " + WorkoutData.LETTERS[i] + "\n" + WorkoutData.FOCUSES[i], false, v -> chooseWorkout(w)), 8);
         }
+        add(c, button("HISTÓRICO", false, v -> showHistory()), 0);
         list(c);
     }
     private void chooseWorkout(int w) {
@@ -76,12 +77,20 @@ public final class MainActivity extends Activity {
         if (active == 0) { newSession(); return; }
         new AlertDialog.Builder(this).setTitle("Treino " + WorkoutData.LETTERS[w])
             .setItems(new String[]{"Continuar treino", "Começar novo treino"}, (d, which) -> {
-                if (which == 0) { session = active; showWorkout(); } else newSession();
+                if (which == 0) { session = active; showWorkout(); } else confirmNewSession(active);
             }).setNegativeButton("Voltar", (d, which) -> showHome()).show();
+    }
+    private void confirmNewSession(long previous) {
+        new AlertDialog.Builder(this)
+            .setMessage("Começar outro treino? O andamento atual ficará no histórico.")
+            .setPositiveButton("Começar", (d, w) -> {
+                prefs.edit().putInt("workout_" + previous, workout).apply();
+                newSession();
+            }).setNegativeButton("Cancelar", null).show();
     }
     private void newSession() {
         session = System.currentTimeMillis();
-        prefs.edit().putLong("active_" + workout, session).putLong("start_" + session, session).apply();
+        prefs.edit().putLong("active_" + workout, session).putLong("start_" + session, session).putInt("workout_" + session, workout).apply();
         showWorkout();
     }
     private String setKey(int e) { return "s_" + session + "_" + workout + "_" + e; }
@@ -142,6 +151,55 @@ public final class MainActivity extends Activity {
             prefs.edit().putString(valueKey(e,"load"),load.getText().toString().trim()).putString(valueKey(e,"reps"),reps.getText().toString().trim()).apply(); showExercise(e);
         }).setNegativeButton("Cancelar",null).show();
     }
+    private int completedFor(long id, int w) {
+        int count = 0;
+        for (int i = 0; i < 10; i++) if (prefs.getInt("s_" + id + "_" + w + "_" + i, 0) == 3) count++;
+        return count;
+    }
+    private void showHistory() {
+        screen = "history";
+        LinearLayout c = column();
+        add(c, text("HISTÓRICO", 16, WHITE, true), 10);
+        java.util.ArrayList<Long> ids = new java.util.ArrayList<>();
+        java.util.Map<String, ?> all = prefs.getAll();
+        for (String key : all.keySet()) {
+            if (!key.startsWith("start_")) continue;
+            try { ids.add(Long.parseLong(key.substring(6))); } catch (NumberFormatException ignored) { }
+        }
+        java.util.Collections.sort(ids, java.util.Collections.reverseOrder());
+        int shown = 0;
+        for (long id : ids) {
+            int w = prefs.getInt("workout_" + id, -1);
+            if (w < 0 || w >= WorkoutData.LETTERS.length) {
+                for (int candidate = 0; candidate < 4; candidate++) {
+                    if (prefs.getLong("active_" + candidate, 0) == id || all.containsKey("s_" + id + "_" + candidate + "_0")) { w = candidate; break; }
+                    for (int e = 1; e < 10; e++) if (all.containsKey("s_" + id + "_" + candidate + "_" + e)) { w = candidate; break; }
+                    if (w >= 0) break;
+                }
+            }
+            if (w < 0 || w >= WorkoutData.LETTERS.length) continue;
+            final int selectedWorkout = w; final long selectedSession = id;
+            String date = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault()).format(new java.util.Date(id));
+            String status = prefs.getLong("end_" + id, 0) > 0 ? "FINALIZADO" : "EM ANDAMENTO";
+            add(c, button("TREINO " + WorkoutData.LETTERS[w] + " • " + date + "\n" + completedFor(id, w) + "/10 • " + status, false,
+                v -> showHistoryDetail(selectedSession, selectedWorkout)), 8);
+            shown++;
+        }
+        if (shown == 0) add(c, text("Nenhum treino registrado ainda.", 10, MUTED, false), 10);
+        add(c, button("VOLTAR", false, v -> showHome()), 0);
+        list(c);
+    }
+    private void showHistoryDetail(long id, int w) {
+        screen = "history_detail";
+        LinearLayout c = column();
+        add(c, text("TREINO " + WorkoutData.LETTERS[w], 15, WHITE, true), 8);
+        for (int i = 0; i < 10; i++) {
+            int count = Integer.bitCount(prefs.getInt("s_" + id + "_" + w + "_" + i, 0) & 3);
+            add(c, text(WorkoutData.NAMES[w][i] + "\n" + count + " de 2 séries", 10, count == 2 ? ORANGE : MUTED, false), 9);
+        }
+        add(c, button("VOLTAR", false, v -> showHistory()), 0);
+        list(c);
+    }
     private void confirmFinish() {
         new AlertDialog.Builder(this).setMessage("Finalizar este treino? As séries registradas ficarão salvas.")
             .setPositiveButton("Finalizar",(d,w)->showSummary()).setNegativeButton("Voltar",null).show();
@@ -155,6 +213,6 @@ public final class MainActivity extends Activity {
         add(c,button("INÍCIO",true,v->showHome()),0); list(c);
     }
     @Override public void onBackPressed() {
-        if ("exercise".equals(screen)) showWorkout(); else if ("workout".equals(screen) || "summary".equals(screen)) showHome(); else super.onBackPressed();
+        if ("exercise".equals(screen)) showWorkout(); else if ("history_detail".equals(screen)) showHistory(); else if ("history".equals(screen) || "workout".equals(screen) || "summary".equals(screen)) showHome(); else super.onBackPressed();
     }
 }
